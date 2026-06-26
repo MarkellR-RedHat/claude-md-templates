@@ -1,137 +1,236 @@
 # CLAUDE.md Templates
 
-A collection of ready-to-use CLAUDE.md template files for different project types.
+Production-grade project configuration templates for [Claude Code](https://docs.anthropic.com/en/docs/claude-code). Drop one into your project and Claude Code immediately understands your conventions, tooling, testing patterns, and review standards.
 
-## What is CLAUDE.md?
+Each template was written by engineers who work in that domain daily. These are not generic "write clean code" checklists. They encode the specific patterns, pitfalls, and practices that matter in each project type.
 
-CLAUDE.md is a file you place in your project's root directory to give [Claude Code](https://docs.anthropic.com/en/docs/claude-code) context about your project. It tells Claude about your coding conventions, project structure, testing approaches, and how to work effectively in your codebase. Think of it as onboarding documentation for your AI coding assistant.
+## Why Use a CLAUDE.md?
 
-When Claude Code opens a project, it reads the CLAUDE.md file and uses that context to generate better, more project-appropriate code and suggestions.
+When Claude Code opens a project, it reads `CLAUDE.md` from the root directory. This file tells Claude:
+
+- What language and framework conventions to follow
+- How to run tests, linters, and builds
+- What security and performance patterns to use
+- What common mistakes to avoid
+- What to check before committing code
+
+Without a CLAUDE.md, Claude guesses. With one, it knows.
 
 ## Available Templates
 
-| Template | File | Best For |
-|----------|------|----------|
-| Content Writing | `templates/content-writing.md` | Blog posts, technical articles, and content projects. Includes Red Hat tone guidelines, product name conventions, blog structure patterns, and link formatting rules. |
-| Conference Proposals | `templates/proposals.md` | CFP submissions and talk proposals. Includes abstract structure, learning objectives, audience targeting, and speaker bio formatting. Covers KubeCon, Red Hat Summit, DevConf, and more. |
-| AI/ML Project | `templates/ai-ml-project.md` | Machine learning and AI codebases. Covers model serving with vLLM and KServe, GPU-aware testing, inference pipelines, PyTorch conventions, and container image best practices. |
-| Kubernetes Project | `templates/kubernetes-project.md` | Kubernetes and OpenShift projects. Includes Helm chart conventions, operator patterns, CRD naming rules, RBAC best practices, and testing with kind and envtest. |
-| General Dev Rel | `templates/general-devrel.md` | Developer Relations work. Covers code sample standards, documentation guidelines, workshop design, demo best practices, and community interaction patterns. |
-| Go Project | `templates/go-project.md` | Go codebases. Includes Go naming conventions, error handling patterns, concurrency guidelines, testing with table-driven tests, and container image builds. |
-| Python Project | `templates/python-project.md` | Python codebases. Covers type hints, pytest conventions, dependency management with uv and pip, Pydantic models, ruff linting, and virtual environment handling. |
-| Rust Project | `templates/rust-project.md` | Rust codebases. Covers cargo conventions, clippy lints, error handling with thiserror and anyhow, async patterns with tokio, and unsafe code guidelines. |
-| Documentation | `templates/documentation.md` | Documentation-focused projects. Covers style guides, information architecture, content structure, review checklists, and publishing workflows. |
-| Helm Chart | `templates/helm-chart.md` | Helm chart development. Covers chart structure, values schema design, template helpers, hook patterns, dependency management, and chart testing with helm-unittest. |
+### Code Projects
 
-## Template Comparison
-
-Use this table to quickly find the right template for your project.
-
-| If your project is... | Use this template | Key features |
+| Template | File | What It Covers |
 |---|---|---|
-| A Python application or library | `python-project.md` | ruff, pytest, type hints, Pydantic, uv/pip, virtual environments |
-| A Go service or CLI tool | `go-project.md` | golangci-lint, table-driven tests, error wrapping, concurrency patterns |
-| A Rust crate or binary | `rust-project.md` | cargo, clippy, thiserror/anyhow, tokio, unsafe code guidelines |
-| An AI/ML pipeline or model serving system | `ai-ml-project.md` | vLLM, KServe, PyTorch, GPU-aware testing, inference pipelines |
-| A Kubernetes operator or controller | `kubernetes-project.md` | Helm charts, CRD patterns, RBAC, envtest, OpenShift compatibility |
-| A standalone Helm chart | `helm-chart.md` | values schema, template helpers, hooks, helm-unittest, dependency management |
-| A blog post, article, or content piece | `content-writing.md` | Red Hat tone, product naming, blog structure, link formatting |
-| A conference talk or CFP submission | `proposals.md` | Abstract structure, learning objectives, audience targeting, speaker bios |
-| A documentation site or knowledge base | `documentation.md` | Style guides, information architecture, content structure, review checklists |
-| A developer relations project (demos, workshops, samples) | `general-devrel.md` | Code samples, workshop design, demo best practices, community patterns |
+| Python | [`python-project.md`](templates/python-project.md) | ruff, mypy, pytest, Pydantic, structured logging, dependency scanning, performance profiling, security patterns |
+| Go | [`go-project.md`](templates/go-project.md) | golangci-lint, table-driven tests, pprof, concurrency patterns, graceful shutdown, error wrapping, module management |
+| Rust | [`rust-project.md`](templates/rust-project.md) | clippy, cargo-deny, thiserror/anyhow, tokio async, unsafe policy, Miri, fuzzing, criterion benchmarks |
+| FastAPI | [`fastapi-project.md`](templates/fastapi-project.md) | Pydantic v2, SQLAlchemy 2.0, Alembic migrations, dependency injection, httpx testing, OpenAPI customization |
+| AI/ML | [`ai-ml-project.md`](templates/ai-ml-project.md) | PyTorch, vLLM, model lifecycle, distributed training, quantization, RAG patterns, GPU profiling, model monitoring |
+| Data Pipeline | [`data-pipeline.md`](templates/data-pipeline.md) | Apache Spark, Beam, schema evolution, idempotency, backfill strategies, data quality, orchestration patterns |
+| CLI Tool | [`cli-tool.md`](templates/cli-tool.md) | Cobra/Click/Clap, config file handling, shell completion, output formatting, release automation, man pages |
+
+### Infrastructure Projects
+
+| Template | File | What It Covers |
+|---|---|---|
+| Kubernetes | [`kubernetes-project.md`](templates/kubernetes-project.md) | Pod Security Standards, network policies, RBAC, HPA tuning, observability, GitOps, troubleshooting patterns |
+| Operator SDK | [`operator-sdk.md`](templates/operator-sdk.md) | controller-runtime, reconciliation loops, finalizers, status conditions, webhooks, OLM packaging, envtest |
+| Helm Chart | [`helm-chart.md`](templates/helm-chart.md) | Template patterns, values schema, hooks, library charts, OCI registries, chart-testing, OpenShift compatibility |
+
+### Content Projects
+
+| Template | File | What It Covers |
+|---|---|---|
+| Content Writing | [`content-writing.md`](templates/content-writing.md) | Red Hat editorial standards, SEO, content lifecycle, accessibility, editorial calendar, measurement |
+| Proposals | [`proposals.md`](templates/proposals.md) | CFP structure, talk design, demo planning, audience analysis, slide design, post-talk engagement |
+| Documentation | [`documentation.md`](templates/documentation.md) | Diataxis framework, docs-as-code CI, versioning, API docs, link checking, Vale linting, accessibility |
+| DevRel | [`general-devrel.md`](templates/general-devrel.md) | Developer journey, code sample standards, workshop design, community building, metrics, crisis communication |
+
+## Template Comparison Matrix
+
+Use this matrix to find the right template when you are not sure which one fits.
+
+| If your project... | Primary Template | Consider Combining With |
+|---|---|---|
+| Is a Python app or library | `python-project` | `kubernetes-project` for deployment |
+| Uses FastAPI | `fastapi-project` | `ai-ml-project` if serving models |
+| Serves ML models (vLLM, TGI) | `ai-ml-project` | `kubernetes-project` for k8s deployment |
+| Is a Go service or API | `go-project` | `kubernetes-project` or `helm-chart` |
+| Is a Kubernetes operator | `operator-sdk` | `go-project` for Go conventions |
+| Packages apps as Helm charts | `helm-chart` | `kubernetes-project` for cluster patterns |
+| Processes data at scale | `data-pipeline` | `python-project` or `kubernetes-project` |
+| Is a CLI tool (any language) | `cli-tool` | Language template (`go`, `python`, `rust`) |
+| Is a Rust binary or library | `rust-project` | `cli-tool` if it is a CLI |
+| Is a blog or article repo | `content-writing` | `general-devrel` for broader DevRel |
+| Contains conference proposals | `proposals` | `content-writing` for writing standards |
+| Is a documentation site | `documentation` | - |
+| Is a DevRel project with demos | `general-devrel` | Language template for code quality |
 
 ## Quick Start
 
-### Option 1: Use the install script
+### Option 1: Interactive installer
+
+The interactive mode asks questions about your project and recommends a template.
 
 ```bash
 git clone https://github.com/MarkellR-RedHat/ai-bu-claude-md-templates.git
 cd ai-bu-claude-md-templates
 chmod +x install.sh
+./install.sh --interactive
+```
+
+### Option 2: Direct install
+
+If you already know which template you want:
+
+```bash
+./install.sh --template python-project --dir ~/my-project
+```
+
+### Option 3: Standard selection
+
+Browse all templates and pick one:
+
+```bash
 ./install.sh
 ```
 
-The script will show you the available templates, let you pick one, and copy it to a directory of your choice.
+### Option 4: Preview before choosing
 
-Additional flags:
+See the first 20 lines of each template before selecting:
 
 ```bash
-./install.sh --help       # Show usage information
-./install.sh --list       # List templates and exit (useful for scripting)
-./install.sh --preview    # Preview template contents before selecting
+./install.sh --preview
 ```
 
-### Option 2: Copy manually
+### Option 5: Copy manually
 
 ```bash
-# Copy a template directly into your project
 cp templates/python-project.md /path/to/your/project/CLAUDE.md
 ```
 
-### Option 3: Use curl (no clone needed)
+### Option 6: Download with curl (no clone needed)
 
 ```bash
-# Download a single template directly
 curl -o CLAUDE.md https://raw.githubusercontent.com/MarkellR-RedHat/ai-bu-claude-md-templates/main/templates/python-project.md
 ```
 
+## Slash Commands
+
+This repo includes Claude Code slash commands for template management.
+
+### `/suggest-template`
+
+Analyzes your current project (language, frameworks, file structure) and recommends which template to use. Shows a side-by-side comparison when multiple templates might fit.
+
+```
+/suggest-template
+```
+
+Or provide context:
+
+```
+/suggest-template this is a FastAPI app that serves ML models
+```
+
+### `/compose-template`
+
+Combines multiple templates into a single CLAUDE.md. Merges sections intelligently, deduplicates shared advice, and produces a unified file.
+
+```
+/compose-template python + kubernetes
+/compose-template fastapi + ai-ml
+/compose-template go + helm-chart + kubernetes
+```
+
+To use these commands, add this repo as a command source in your Claude Code settings or copy the `commands/` directory into your project's `.claude/commands/` directory.
+
 ## Customizing a Template
 
-After copying a template into your project, customize it:
+After installing a template:
 
-1. **Search for TODO markers.** Every template includes `TODO` comments that flag sections you need to fill in or adjust for your project. Start by searching for `TODO` and working through each one.
-2. Update the **Project Overview** section with a description of your specific project.
-3. Adjust the **Tech Stack** to match what your project actually uses.
-4. Modify **Project Structure** to reflect your real directory layout.
-5. Add or remove conventions based on your team's practices.
-6. Update **Common Commands** with the actual commands for your project.
+1. **Search for TODO markers.** Every template has `<!-- TODO: ... -->` comments at the top. Work through each one to customize for your project.
+2. **Update Project Overview** with your specific project description.
+3. **Adjust the tech stack** to match what you actually use.
+4. **Modify the project structure** to reflect your real directory layout.
+5. **Update common commands** with your actual Makefile targets or scripts.
+6. **Remove sections that do not apply** and add anything that is missing.
 
-The templates are starting points, not rigid specifications. Remove what does not apply and add what is missing.
+The templates are starting points. Remove what does not apply. Add what is missing.
 
-## Contributing a Template
+## What Makes These Templates Effective
 
-Contributions are welcome. If you have a template for a project type not covered here, open a PR. Below are the guidelines for new templates.
+Each template includes:
 
-### File naming
+- **Domain-specific conventions**: not "write clean code" but "use `thiserror` for library error types and `anyhow` for binaries"
+- **Common pitfalls**: the mistakes that cost teams hours, specific to each domain
+- **Testing patterns**: framework-specific testing strategies, not just "write tests"
+- **Security considerations**: threat models and mitigations for each project type
+- **Performance guidance**: profiling tools, optimization patterns, and what to measure
+- **Tool configurations**: ready-to-use configs for linters, formatters, and test runners
+- **Review checklists**: what to verify before every commit, tailored to the domain
 
-- Use lowercase, hyphenated names with a `.md` extension. Examples: `python-project.md`, `helm-chart.md`, `content-writing.md`.
-- Pick a name that clearly identifies the project type or domain.
+## Install Script Reference
 
-### Required sections
+```
+Usage: ./install.sh [OPTIONS]
 
-Every template must include these sections (order may vary):
+Options:
+  -h, --help                  Show help message and exit
+  -l, --list                  List available templates and exit
+  -p, --preview               Preview template contents before selecting
+  -i, --interactive           Guided template selection based on your project
+  -t, --template NAME         Install a specific template by name
+  -d, --dir PATH              Set the target directory
+```
 
-1. **Quick customize** (or TODO markers). Provide inline `TODO` comments so users can quickly find and fill in project-specific details.
-2. **Project Overview.** A placeholder for the project description, tech stack, and directory structure.
-3. **Code/Content Conventions.** The core guidance for Claude: naming rules, patterns, style, linting, and formatting.
-4. **Testing/Validation.** How to run tests, what frameworks to use, coverage expectations, and any project-specific testing patterns.
-5. **Common Commands.** The shell commands a developer runs daily (build, test, lint, deploy).
-6. **Review Checklist.** A final checklist Claude can use before submitting code or content.
+Examples:
 
-### Voice and tone
+```bash
+./install.sh                              # Standard selection mode
+./install.sh --interactive                 # Answer questions, get a recommendation
+./install.sh --template go-project         # Install Go template directly
+./install.sh -t fastapi-project -d ~/app   # Install FastAPI template to ~/app
+./install.sh --preview                     # Preview templates before choosing
+./install.sh --list                        # List all available templates
+```
 
-- Write in a direct, practical voice. No filler, no fluff.
-- Use imperative mood for instructions ("Run tests with pytest" not "You should run tests with pytest").
-- Be specific. Generic advice like "write clean code" does not help. Instead, say exactly what you mean ("Functions must not exceed 50 lines").
-- Avoid em dashes. Use commas, periods, semicolons, or "and" instead.
+## Contributing
+
+Contributions are welcome. If you have a template for a project type not covered here, open a PR.
+
+### Template requirements
+
+Every template must include:
+
+1. **TODO markers** in an HTML comment block at the top for quick customization
+2. **Project Overview** with tech stack and directory structure
+3. **Code/Content Conventions** with specific, actionable guidance
+4. **Testing/Validation** patterns for that project type
+5. **Security Considerations** relevant to the domain
+6. **Performance Considerations** with profiling and optimization patterns
+7. **Common Pitfalls** that are specific, not generic
+8. **Common Commands** for daily development workflow
+9. **Review Checklist** tailored to the domain
+
+### Style rules
+
+- Write in Red Hat engineering voice: direct, practical, no fluff
+- Use imperative mood for instructions
+- Be specific. "Functions must not exceed 50 lines" beats "write clean code"
+- No em dashes. Use commas, periods, semicolons, or "and" instead
+- Include concrete code examples where they help
 
 ### Testing your template
 
-Before submitting a PR, test your template in a real project:
+Before submitting:
 
-1. Copy the template into an actual project directory as `CLAUDE.md`.
-2. Open that project with Claude Code.
-3. Ask Claude to perform typical tasks (write a function, fix a bug, add a test).
-4. Verify that Claude follows the conventions in your template.
-5. Check that the TODO markers are clear and easy to find.
-
-### PR process
-
-1. Fork the repository and create a branch for your template.
-2. Add your template file to the `templates/` directory.
-3. Update the "Available Templates" table and the "Template Comparison" table in this README.
-4. Open a PR with a brief description of what project type the template covers and why it is useful.
-5. Be ready to iterate on feedback.
+1. Copy the template into an actual project as `CLAUDE.md`
+2. Open the project with Claude Code
+3. Ask Claude to perform typical tasks (write a function, fix a bug, add a test)
+4. Verify Claude follows the conventions in your template
+5. Check that TODO markers are clear and easy to find
 
 ## License
 

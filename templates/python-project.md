@@ -9,13 +9,21 @@
 
 ## Project Overview
 
-This is a Python project. It follows modern Python conventions with an emphasis on type safety, testability, and clear dependency management.
+This is a Python project. It follows modern Python conventions with an emphasis on type safety, testability, clear dependency management, and production readiness.
 
 ## Python Version
 
 - Target Python 3.11+ unless the project specifies otherwise.
 - Use the version specified in `pyproject.toml` or `.python-version`.
 - Do not use features deprecated in the target Python version.
+- When writing version-specific code, guard it:
+  ```python
+  import sys
+  if sys.version_info >= (3, 12):
+      from typing import override
+  else:
+      from typing_extensions import override
+  ```
 
 ## Project Structure
 
@@ -24,34 +32,43 @@ project-root/
   src/
     mypackage/
       __init__.py
-      main.py            # Application entrypoint
-      config.py          # Configuration and settings
-      models.py          # Data models (Pydantic, dataclasses)
-      services/          # Business logic
-      api/               # API routes and handlers
-      utils/             # Utility functions
+      __main__.py          # Entry point for `python -m mypackage`
+      main.py              # Application bootstrap and startup
+      config.py            # Configuration and settings
+      models.py            # Data models (Pydantic, dataclasses)
+      exceptions.py        # Custom exception hierarchy
+      services/            # Business logic
+      api/                 # API routes and handlers
+      utils/               # Utility functions (keep this thin)
   tests/
     unit/
       test_models.py
       test_services.py
     integration/
       test_api.py
-    conftest.py          # Shared fixtures
+    conftest.py            # Shared fixtures
   pyproject.toml
-  requirements.txt       # Or use uv.lock / poetry.lock
+  requirements.txt         # Or use uv.lock / poetry.lock
   Containerfile
   Makefile
   .python-version
 ```
 
-### Layout rules:
+### Layout rules
+
 - Use the `src/` layout. This prevents accidentally importing the package from the project root instead of the installed version.
-- Keep `__init__.py` files minimal. Do not put logic in them.
-- One class per file is not required. Group related classes and functions in the same module.
+- Keep `__init__.py` files minimal. No logic. At most an `__all__` list and version metadata.
+- Define `__all__` in every module that will be imported by others. This controls `from module import *` and documents the public API.
+  ```python
+  __all__ = ["InferenceRequest", "InferenceResponse", "ModelConfig"]
+  ```
+- Group related classes and functions in the same module. Split when a module exceeds ~500 lines.
+- Keep `utils/` thin. If a utility module grows, it deserves its own properly named module.
 
 ## Code Conventions
 
 ### Style and Formatting
+
 - Use `ruff` for linting and formatting. It replaces flake8, isort, and black.
 - Configure ruff in `pyproject.toml`:
   ```toml
@@ -60,126 +77,160 @@ project-root/
   line-length = 100
 
   [tool.ruff.lint]
-  select = ["E", "F", "I", "N", "W", "UP", "B", "A", "SIM", "TCH"]
+  select = [
+      "E", "F", "I", "N", "W", "UP", "B", "A", "SIM", "TCH",
+      "S",    # flake8-bandit (security)
+      "DTZ",  # flake8-datetimez (timezone-aware datetime)
+      "PT",   # flake8-pytest-style
+      "RUF",  # ruff-specific rules
+  ]
+  ignore = ["S101"]  # allow assert in tests
+
+  [tool.ruff.lint.per-file-ignores]
+  "tests/**/*.py" = ["S101", "S106"]
   ```
 - Maximum line length is 100 characters.
 
 ### Type Hints
-- Use type hints on all function signatures. This is not optional.
-- Use modern type hint syntax (Python 3.10+):
-  ```python
-  # Good
-  def process(items: list[str]) -> dict[str, int]:
-  def fetch(url: str) -> str | None:
 
-  # Avoid (old style)
-  from typing import List, Dict, Optional
-  def process(items: List[str]) -> Dict[str, int]:
-  def fetch(url: str) -> Optional[str]:
-  ```
-- Use `TypeAlias` for complex types:
-  ```python
-  from typing import TypeAlias
-  UserMap: TypeAlias = dict[str, list[int]]
-  ```
-- Run `mypy` in strict mode for type checking:
+- Use type hints on all function signatures. This is not optional.
+- Use modern syntax (Python 3.10+): `list[str]`, `str | None`, not `List[str]`, `Optional[str]`.
+- Use `TypeAlias` for complex types. Use `Protocol` for callback signatures.
+- Run `mypy` in strict mode:
   ```toml
   [tool.mypy]
   strict = true
+  warn_return_any = true
+  warn_unreachable = true
+
+  [[tool.mypy.overrides]]
+  module = "tests.*"
+  disallow_untyped_defs = false
   ```
+- For libraries missing stubs, add inline ignores with comments: `# type: ignore[import-untyped]  # no stubs available`
 
 ### Naming
-- Use `snake_case` for functions, variables, and module names.
-- Use `PascalCase` for classes.
-- Use `UPPER_SNAKE_CASE` for constants.
-- Prefix private methods and attributes with a single underscore: `_internal_method`.
-- Do not use double underscores for name mangling unless you have a specific reason.
+
+- `snake_case` for functions, variables, modules. `PascalCase` for classes. `UPPER_SNAKE_CASE` for constants.
+- Prefix private attributes with a single underscore. No double underscores unless avoiding collisions in subclassing hierarchies.
+- Name booleans as questions: `is_valid`, `has_permission`, `can_retry`.
 
 ### Imports
-- Sort imports with `ruff` (isort-compatible).
-- Group imports: standard library, third-party, local.
-- Use absolute imports. Avoid relative imports except within the same package.
-- Do not use wildcard imports (`from module import *`).
+
+- Sort with `ruff` (isort-compatible). Group: stdlib, third-party, local.
+- Use absolute imports. No wildcard imports.
+- Use `TYPE_CHECKING` guards for imports needed only in annotations:
+  ```python
+  from __future__ import annotations
+  from typing import TYPE_CHECKING
+
+  if TYPE_CHECKING:
+      from mypackage.services import HeavyService
+  ```
 
 ### Error Handling
-- Never use bare `except:` clauses. Always specify the exception type.
-- Catch the most specific exception possible.
-- Use custom exceptions for domain-specific errors:
+
+- Never use bare `except:`. Catch the most specific exception possible.
+- Define a custom exception hierarchy:
   ```python
-  class ModelNotFoundError(Exception):
-      """Raised when a requested model is not available."""
+  # mypackage/exceptions.py
+  class AppError(Exception):
+      """Base exception for all application errors."""
+  class ConfigError(AppError): ...
+  class ServiceError(AppError): ...
+  class NotFoundError(ServiceError): ...
+  class ValidationError(AppError): ...
   ```
-- Let unexpected exceptions propagate. Do not catch exceptions just to log and re-raise them unless you are adding context.
-- Use `raise ... from err` to chain exceptions and preserve the traceback:
-  ```python
-  try:
-      result = parse(data)
-  except ValueError as err:
-      raise ConfigError(f"Invalid config data: {data!r}") from err
-  ```
+- Use `raise ... from err` to chain exceptions and preserve tracebacks.
+- Never silently swallow exceptions. If you catch and continue, log at WARNING or higher.
+- Use context managers for cleanup instead of try/finally.
 
 ### Data Models
-- Use Pydantic for data validation and serialization:
+
+- Use Pydantic for validation, serialization, and anything crossing a trust boundary:
   ```python
-  from pydantic import BaseModel, Field
+  from pydantic import BaseModel, ConfigDict, Field, field_validator
 
   class InferenceRequest(BaseModel):
+      model_config = ConfigDict(frozen=True)
+
       prompt: str = Field(..., min_length=1, max_length=4096)
       temperature: float = Field(default=0.7, ge=0.0, le=2.0)
       max_tokens: int = Field(default=256, ge=1, le=4096)
+
+      @field_validator("prompt")
+      @classmethod
+      def prompt_must_not_be_blank(cls, v: str) -> str:
+          if not v.strip():
+              raise ValueError("prompt must contain non-whitespace characters")
+          return v
   ```
-- Use `dataclasses` for simple internal data structures that do not need validation.
-- Do not use plain dictionaries for structured data that gets passed between functions. Define a model.
+- Use `dataclasses` for simple internal data that does not need validation.
+- Do not pass structured data between functions as plain dicts. Define a model.
+- Make models immutable by default (`frozen=True`). Mutability should be a deliberate choice.
 
 ### Async Code
-- Use `async`/`await` for I/O-bound operations (HTTP calls, database queries, file I/O).
-- Use `asyncio.gather()` for concurrent async operations.
-- Do not mix sync and async code without careful thought. Use `asyncio.to_thread()` to run blocking code in an async context.
-- Use `httpx` for async HTTP clients. Avoid `requests` in async code.
+
+- Use `async`/`await` for I/O-bound operations.
+- Use `asyncio.gather()` with `return_exceptions=True` and check results for exceptions.
+- Use `asyncio.to_thread()` to run blocking code in an async context.
+- Use `httpx` for async HTTP. Avoid `requests` in async code.
+- Always use async context managers for connections and sessions.
 
 ## Dependency Management
 
-### Preferred tools (in order):
+### Preferred tools (in order)
+
 1. **uv** (fast, modern, recommended for new projects)
 2. **pip** with `requirements.txt` (simple, widely supported)
 3. **poetry** (if the project already uses it)
 
-### Virtual environments:
-- Always use a virtual environment. Never install packages globally.
-- Use `uv venv` or `python -m venv .venv` to create the environment.
-- Add `.venv/` to `.gitignore`.
-- Document how to set up the environment in the README.
+### Virtual environments
 
-### Pinning:
-- Pin all dependency versions for applications. Use `uv lock` or `pip freeze > requirements.txt`.
-- For libraries, specify version ranges in `pyproject.toml` and pin in the lock file.
+- Always use a virtual environment. Never install packages globally.
+- Use `uv venv` or `python -m venv .venv`. Add `.venv/` to `.gitignore`.
+
+### Pinning
+
+- Pin all dependency versions for applications. For libraries, use version ranges in `pyproject.toml`.
+- Separate dev dependencies from production:
+  ```toml
+  [project.optional-dependencies]
+  dev = ["pytest>=8.0", "pytest-cov>=5.0", "mypy>=1.10", "ruff>=0.8", "pip-audit>=2.7"]
+  ```
+
+### Security scanning
+
+- Run `pip-audit` in CI: `pip-audit --require-hashes --strict`
+- Pin hashes in production requirements: `pip-compile --generate-hashes requirements.in -o requirements.txt`
+- Review new dependencies before adding them. Check maintenance status, license, and adoption.
+
+### License compliance
+
+- Check that all dependencies are license-compatible with your project: `pip-licenses --format=table --with-urls`
+- Watch for GPL-licensed transitive dependencies in permissive-licensed projects.
+
+### Conflicting transitive dependencies
+
+- Use `pip check` to detect broken relationships.
+- Options: update both packages (preferred), pin an intermediate version, or vendor (last resort).
+- Document any version overrides with a comment explaining the conflict.
 
 ### .gitignore essentials
 
-Include these entries in `.gitignore` for Python projects:
 ```text
-# Virtual environments
 .venv/
 venv/
-env/
-
-# Python artifacts
 __pycache__/
 *.py[cod]
 *.egg-info/
 dist/
 build/
-
-# IDE
 .idea/
 .vscode/
 *.swp
-
-# Environment and secrets
 .env
 .env.local
-
-# Test and coverage
 .coverage
 htmlcov/
 .pytest_cache/
@@ -189,7 +240,6 @@ htmlcov/
 
 ### Pre-commit hooks
 
-Use `pre-commit` to enforce quality checks before every commit:
 ```yaml
 # .pre-commit-config.yaml
 repos:
@@ -204,69 +254,271 @@ repos:
     hooks:
       - id: mypy
         additional_dependencies: [pydantic]
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v4.6.0
+    hooks:
+      - id: check-added-large-files
+        args: ['--maxkb=1000']
+      - id: check-yaml
+      - id: detect-private-key
+      - id: end-of-file-fixer
+      - id: trailing-whitespace
 ```
 
-Install and activate:
-```bash
-pip install pre-commit
-pre-commit install
-pre-commit run --all-files
+Install: `pip install pre-commit && pre-commit install`
+
+## Security
+
+### Secrets management
+
+- Never hardcode credentials, API keys, tokens, or passwords. Not even in tests.
+- Use `pydantic-settings` to load secrets from environment variables. Use `Field(repr=False)` on sensitive fields.
+- For production, use a secrets manager (Vault, AWS Secrets Manager, OpenShift secrets).
+- If you accidentally commit a secret, consider it compromised. Rotate immediately.
+
+### Input validation
+
+- Validate all external input at the boundary. Never trust data from users, APIs, files, or queues.
+- Sanitize filenames before filesystem operations:
+  ```python
+  from pathlib import Path
+
+  def safe_path(base_dir: Path, user_filename: str) -> Path:
+      clean = Path(user_filename).name  # strips directory components
+      resolved = (base_dir / clean).resolve()
+      if not resolved.is_relative_to(base_dir.resolve()):
+          raise ValueError("Path traversal detected")
+      return resolved
+  ```
+
+### SQL injection prevention
+
+- Always use parameterized queries. Never use f-strings to build SQL:
+  ```python
+  # DANGEROUS
+  cursor.execute(f"SELECT * FROM users WHERE id = '{user_id}'")
+  # Safe
+  cursor.execute("SELECT * FROM users WHERE id = %s", (user_id,))
+  ```
+
+### SSRF prevention
+
+- When making HTTP requests to user-provided URLs, validate the scheme is `http` or `https` and resolve the hostname to check it is not a private/internal network address (10.x, 172.16.x, 192.168.x, 127.x, 169.254.x).
+
+### Secure deserialization
+
+- Never use `pickle` to load untrusted data. It executes arbitrary code.
+- Never use `yaml.load()`. Use `yaml.safe_load()`.
+- When deserializing JSON from external sources, validate with Pydantic before acting on it.
+
+### Automated security checks
+
+- Enable `S` (bandit) rules in ruff to catch common issues automatically.
+- Run `pip-audit` in CI (see Dependency Management).
+
+## Performance
+
+### Profiling
+
+Do not guess about performance. Measure first, then optimize the bottleneck.
+
+- **CPU profiling**: `python -m cProfile -s cumulative -m mypackage`
+- **Production-safe profiling** with `py-spy` (no code changes, low overhead): `py-spy record -o profile.svg --pid <PID>`
+- **Memory profiling** with `memray`: `memray run -o output.bin my_script.py && memray flamegraph output.bin`
+- For timing, use `time.perf_counter()`, not `time.time()`.
+
+### Common performance patterns
+
+- **Connection pooling**: Reuse database and HTTP connections. Never create a new connection per request.
+  ```python
+  client = httpx.AsyncClient(
+      limits=httpx.Limits(max_connections=100, max_keepalive_connections=20),
+      timeout=httpx.Timeout(30.0, connect=5.0),
+  )
+  ```
+- **Caching**: `functools.lru_cache` for pure functions with hashable args. Redis or memcached for shared/async caches.
+- **Lazy loading**: Defer expensive initialization until first use.
+- **Batch operations**: Batch database and API calls instead of one per item.
+- **Generators**: Use generators instead of materializing large lists in memory.
+
+### Async performance pitfalls
+
+- **Blocking the event loop**: CPU-bound or blocking I/O in async functions blocks all coroutines. Use `asyncio.to_thread()`.
+- **Unbounded concurrency**: `asyncio.gather()` with thousands of tasks overwhelms downstream services. Use a semaphore:
+  ```python
+  sem = asyncio.Semaphore(50)
+  async def limited_fetch(url: str) -> Response:
+      async with sem:
+          return await client.get(url)
+  ```
+- **Forgetting to await**: Missing `await` means the work never runs. Enable ruff rule `RUF006`.
+
+### GIL considerations
+
+- The GIL means CPU-bound Python runs on a single core regardless of thread count.
+- `threading` helps I/O-bound work. For CPU-bound parallelism, use `multiprocessing` or `ProcessPoolExecutor`.
+- Python 3.13+ has experimental free-threaded mode. Do not rely on it in production yet.
+
+## Logging
+
+### Structured logging with structlog
+
+```python
+import structlog
+
+structlog.configure(
+    processors=[
+        structlog.contextvars.merge_contextvars,
+        structlog.processors.add_log_level,
+        structlog.processors.TimeStamper(fmt="iso"),
+        structlog.processors.StackInfoRenderer(),
+        structlog.processors.format_exc_info,
+        structlog.processors.JSONRenderer(),
+    ],
+    wrapper_class=structlog.make_filtering_bound_logger(logging.INFO),
+)
+logger = structlog.get_logger()
+```
+
+### Correlation IDs
+
+Attach a correlation ID to every request for cross-service tracing:
+```python
+import uuid
+import structlog
+
+def middleware(request: Request, call_next: Callable) -> Response:
+    correlation_id = request.headers.get("X-Correlation-ID", str(uuid.uuid4()))
+    structlog.contextvars.clear_contextvars()
+    structlog.contextvars.bind_contextvars(correlation_id=correlation_id)
+    response = call_next(request)
+    response.headers["X-Correlation-ID"] = correlation_id
+    return response
+```
+
+### Log levels
+
+- **DEBUG**: Internal state, development only. Disabled in production.
+- **INFO**: Normal operations (startup, shutdown, request served).
+- **WARNING**: Unexpected but handled (retry, fallback).
+- **ERROR**: Operation failed, needs attention.
+- **CRITICAL**: System cannot continue.
+
+### What NOT to log
+
+- Never log passwords, tokens, API keys, or session IDs.
+- Never log PII (emails, phone numbers) without compliance approval.
+- Never log full request/response bodies in production. Log status code, content length, elapsed time.
+
+### Standard library fallback
+
+```python
+import logging
+logging.basicConfig(format="%(asctime)s %(levelname)s %(name)s %(message)s", level=logging.INFO)
+logger = logging.getLogger(__name__)
 ```
 
 ## Testing
 
 ### Framework: pytest
-- Use `pytest` for all tests. Do not use `unittest` unless maintaining legacy code.
-- Configure pytest in `pyproject.toml`:
-  ```toml
-  [tool.pytest.ini_options]
-  testpaths = ["tests"]
-  addopts = "-v --strict-markers"
-  markers = [
-      "slow: marks tests as slow",
-      "integration: marks integration tests",
-      "gpu: marks tests requiring GPU",
-  ]
-  ```
 
-### Test conventions:
-- Name test files `test_<module>.py`.
-- Name test functions `test_<behavior_being_tested>`.
-- Use descriptive test names: `test_parse_config_raises_on_missing_field` not `test_parse_1`.
-- Use fixtures for setup and teardown. Define shared fixtures in `conftest.py`.
+Configure in `pyproject.toml`:
+```toml
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "-v --strict-markers --tb=short"
+markers = ["slow: marks tests as slow", "integration: marks integration tests"]
+filterwarnings = ["error"]
+```
+
+### Test conventions
+
+- Name test files `test_<module>.py`, functions `test_<behavior_being_tested>`.
+- Mirror the source tree: `src/mypackage/services/auth.py` gets `tests/unit/services/test_auth.py`.
 - Use `pytest.mark.parametrize` for testing multiple inputs:
   ```python
   @pytest.mark.parametrize("input_val,expected", [
       ("hello", "HELLO"),
       ("", ""),
-      ("123", "123"),
   ])
   def test_transform(input_val: str, expected: str) -> None:
       assert transform(input_val) == expected
   ```
 
-### Mocking:
-- Use `pytest-mock` or `unittest.mock`.
-- Mock at the boundary, not deep inside the code. Mock the HTTP client, not the internal function that calls it.
+### Fixture scoping pitfalls
+
+- Default `scope="function"` is usually correct. It gives each test clean state.
+- `scope="module"` or `scope="session"` shares state and causes order-dependent failures if the fixture is mutable.
+- Only use wider scopes for read-only, expensive setup (trained models, compiled schemas).
+
+### Testing async code
+
+Use `pytest-asyncio`. Configure `asyncio_mode = "auto"` in `pyproject.toml`:
+```python
+@pytest.mark.asyncio
+async def test_fetch_user() -> None:
+    user = await fetch_user("123")
+    assert user.name == "Alice"
+```
+
+### Property-based testing
+
+Use `hypothesis` to generate test inputs and catch edge cases you would never write manually:
+```python
+from hypothesis import given, strategies as st
+
+@given(st.text(min_size=1, max_size=100))
+def test_roundtrip_serialization(name: str) -> None:
+    user = User(name=name)
+    restored = User.model_validate_json(user.model_dump_json())
+    assert restored == user
+```
+
+### Snapshot testing
+
+Use `syrupy` for complex outputs where manually writing expected values is brittle:
+```python
+def test_api_response_format(snapshot) -> None:
+    response = generate_report(test_data)
+    assert response == snapshot
+```
+Update snapshots: `pytest --snapshot-update`
+
+### Test isolation
+
+- Each test must be independent. Running in any order produces the same results.
+- Use `tmp_path` for temporary files, `monkeypatch` for environment variables.
+- Be suspicious of tests needing more than two or three mocks. That signals too many responsibilities.
+
+### Mocking
+
+- Mock at the boundary (HTTP client, database), not deep internals.
 - Prefer dependency injection over monkey-patching.
-- Use `responses` or `httpx_mock` for mocking HTTP requests.
+- Use `responses` or `httpx_mock` for HTTP mocking.
 
-### Running tests:
+### Coverage
+
+```toml
+[tool.coverage.run]
+source = ["src/mypackage"]
+branch = true
+
+[tool.coverage.report]
+fail_under = 85
+show_missing = true
+exclude_lines = ["pragma: no cover", "if TYPE_CHECKING:", "if __name__ == .__main__.:"]
+```
+Do not chase 100%. Focus on business logic and edge cases.
+
+### Running tests
+
 ```bash
-# Run all tests
-pytest
-
-# Run with coverage
-pytest --cov=src/mypackage --cov-report=term-missing
-
-# Run only unit tests
-pytest tests/unit/
-
-# Run only integration tests
-pytest tests/integration/ -m integration
-
-# Run a specific test
-pytest tests/unit/test_models.py::test_parse_config_raises_on_missing_field
+pytest                                              # all tests
+pytest --cov=src/mypackage --cov-report=term-missing  # with coverage
+pytest tests/unit/                                   # unit tests only
+pytest -m integration                                # integration tests only
+pytest -k "test_parse"                               # keyword match
+pytest --tb=long -vv                                 # verbose failures
 ```
 
 ## Common Commands
@@ -275,12 +527,8 @@ pytest tests/unit/test_models.py::test_parse_config_raises_on_missing_field
 # Set up development environment
 uv venv && source .venv/bin/activate && uv pip install -e ".[dev]"
 
-# Or with pip
-python -m venv .venv && source .venv/bin/activate && pip install -e ".[dev]"
-
 # Lint and format
-ruff check src/ tests/ --fix
-ruff format src/ tests/
+ruff check src/ tests/ --fix && ruff format src/ tests/
 
 # Type check
 mypy src/
@@ -288,54 +536,46 @@ mypy src/
 # Run the application
 python -m mypackage
 
+# Security audit
+pip-audit
+
 # Build container image
 podman build -t myapp:latest .
+
+# Pre-commit on all files
+pre-commit run --all-files
 ```
 
 ## Debugging
 
-### Common debugging patterns
+### breakpoint()
 
-Use the built-in `breakpoint()` function (Python 3.7+) to drop into a debugger:
 ```python
 def process_request(data: dict) -> dict:
     result = transform(data)
-    breakpoint()  # Drops into pdb; remove before committing
+    breakpoint()  # drops into pdb; remove before committing
     return result
 ```
 
-Useful `pdb` commands once inside the debugger:
-- `n` (next): Execute the next line.
-- `s` (step): Step into a function call.
-- `c` (continue): Continue until the next breakpoint.
-- `p <expr>` (print): Evaluate and print an expression.
-- `l` (list): Show the current source code context.
-- `bt` (backtrace): Show the full call stack.
+Key `pdb` commands: `n` (next), `s` (step), `c` (continue), `p <expr>` (print), `l` (list), `bt` (backtrace), `pp` (pretty-print), `u`/`d` (up/down stack frames).
 
 ### Remote debugging
 
-For containers or remote environments, use `debugpy`:
+For containers, use `debugpy`:
 ```python
 import debugpy
 debugpy.listen(("0.0.0.0", 5678))
-debugpy.wait_for_client()  # Blocks until a debugger attaches
+debugpy.wait_for_client()
 ```
-
-Then connect from VS Code using the "Remote Attach" debug configuration.
+Connect from VS Code with "Remote Attach" debug configuration.
 
 ### Logging-based debugging
 
-When breakpoints are not practical (async code, production-adjacent environments), use structured logging:
+When breakpoints are not practical (async code, production-adjacent environments):
 ```python
-import structlog
-
-logger = structlog.get_logger()
-
-def process(data: dict) -> dict:
-    logger.debug("processing started", input_keys=list(data.keys()))
-    result = transform(data)
-    logger.debug("processing complete", output_keys=list(result.keys()))
-    return result
+logger.debug("processing started", input_keys=list(data.keys()))
+result = transform(data)
+logger.debug("processing complete", output_keys=list(result.keys()))
 ```
 
 ## Container Image
@@ -343,52 +583,153 @@ def process(data: dict) -> dict:
 Use Red Hat Universal Base Image:
 ```dockerfile
 FROM registry.access.redhat.com/ubi9/python-311:latest
-
 WORKDIR /app
 COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
-
 COPY src/ src/
 USER 1001
+HEALTHCHECK --interval=30s --timeout=5s --retries=3 \
+    CMD python -c "import urllib.request; urllib.request.urlopen('http://localhost:8080/healthz')" || exit 1
 CMD ["python", "-m", "mypackage"]
 ```
 
+- Order layers from least to most frequently changing.
+- Use multi-stage builds if you need build tools that should not be in the final image.
+- Do not run as root. Do not store secrets in the image.
+- Use `.containerignore` to exclude `.venv/`, `.git/`, `__pycache__/`, and tests.
+
 ## Environment Variables
 
-- Use `pydantic-settings` for environment variable management:
-  ```python
-  from pydantic_settings import BaseSettings
+```python
+from pydantic import Field
+from pydantic_settings import BaseSettings, SettingsConfigDict
 
-  class Settings(BaseSettings):
-      database_url: str
-      api_key: str
-      debug: bool = False
-      log_level: str = "INFO"
+class Settings(BaseSettings):
+    model_config = SettingsConfigDict(env_prefix="APP_", env_file=".env")
 
-      model_config = SettingsConfigDict(env_prefix="APP_")
-  ```
-- Never hardcode credentials. Always use environment variables or a secrets manager.
-- Document all required environment variables in the README.
-- Provide a `.env.example` file with placeholder values.
+    database_url: str
+    api_key: str = Field(repr=False)  # hidden from repr/logs
+    debug: bool = False
+    log_level: str = "INFO"
+```
 
-## Common Mistakes to Avoid
+- Never hardcode credentials. Use environment variables or a secrets manager.
+- Provide a `.env.example` with placeholder values (never real secrets).
 
-- Do not use mutable default arguments: `def func(items: list = [])`. Use `None` and create a new list inside the function.
-- Do not use `type()` for type checking. Use `isinstance()`.
-- Do not use em dashes in comments, docstrings, or documentation. Use commas, periods, or "and" instead.
-- Do not catch `Exception` or `BaseException` at the top level unless you are in a framework entry point.
-- Do not use `print()` for logging in production code. Use the `logging` module or `structlog`.
-- Do not commit `.env` files. Add them to `.gitignore`.
+## Common Python Pitfalls
+
+These are real bugs that show up in production. Know them.
+
+### Mutable default arguments
+
+```python
+# BUG: all callers share the same list
+def append_to(item: str, target: list[str] = []) -> list[str]: ...
+# Fix: use None sentinel
+def append_to(item: str, target: list[str] | None = None) -> list[str]:
+    if target is None:
+        target = []
+    target.append(item)
+    return target
+```
+
+### Late binding closures
+
+```python
+# BUG: all functions return 4 (the final value of i)
+functions = [lambda: i for i in range(5)]
+# Fix: bind i as a default argument
+functions = [lambda i=i: i for i in range(5)]
+```
+
+### Circular imports
+
+- Symptom: `ImportError: cannot import name 'X' from partially initialized module`.
+- Fixes: lazy import inside the function, `TYPE_CHECKING` guard for annotations, or restructure to break the cycle.
+
+### Datetime timezone handling
+
+```python
+# BUG: naive datetime
+now = datetime.now()       # no timezone
+now = datetime.utcnow()    # still naive despite the name
+# Fix: always timezone-aware
+now = datetime.now(timezone.utc)
+```
+Enable ruff rule `DTZ` to catch this automatically.
+
+### Float precision
+
+```python
+>>> 0.1 + 0.2 == 0.3   # False
+# Use Decimal for financial math. Use math.isclose() for approximate comparisons.
+```
+
+### String encoding
+
+```python
+# BUG: platform-dependent encoding
+with open("data.txt") as f: ...
+# Fix: explicit encoding
+with open("data.txt", encoding="utf-8") as f: ...
+```
+
+### `is` vs `==`
+
+- `is` checks identity (same object). `==` checks equality (same value).
+- Use `is` only for `None`, `True`, `False`, and sentinel objects. Never for integers or strings.
+
+### Catching too broadly
+
+```python
+# BUG: swallows everything silently
+try:
+    do_work()
+except Exception:
+    pass
+# Fix: catch specific exceptions, log or handle meaningfully
+```
 
 ## Review Checklist
 
-Before merging:
+Before merging, verify every item. This is not a formality.
 
-- [ ] All tests pass
+### Correctness
+- [ ] All tests pass (unit, integration, property-based)
+- [ ] Edge cases are tested (empty inputs, None, boundary values, Unicode)
+- [ ] Error paths are tested, not just the happy path
+- [ ] Async code is properly awaited
+- [ ] Resource cleanup happens in all code paths (connections, file handles, temp files)
+
+### Type safety and style
 - [ ] `ruff check` and `ruff format --check` report no issues
 - [ ] `mypy` passes in strict mode
-- [ ] Type hints are present on all function signatures
-- [ ] No hardcoded credentials or configuration
-- [ ] New dependencies are justified and pinned
-- [ ] Docstrings are present on public functions and classes
-- [ ] `.env.example` is updated if new env vars were added
+- [ ] Type hints on all function signatures
+- [ ] No unexplained `type: ignore` comments
+
+### Security
+- [ ] No hardcoded credentials, tokens, or API keys
+- [ ] All external input is validated before use
+- [ ] SQL queries are parameterized
+- [ ] No `pickle.loads()`, `yaml.load()`, or `eval()` on untrusted data
+- [ ] `pip-audit` reports no known vulnerabilities
+- [ ] File paths from user input are sanitized against traversal
+
+### Dependencies and configuration
+- [ ] New dependencies are justified, maintained, and license-compatible
+- [ ] Dependencies are pinned
+- [ ] `.env.example` updated if new env vars were added
+
+### Code quality
+- [ ] Docstrings on public functions, classes, and modules
+- [ ] No dead code or unresolved TODOs
+- [ ] Functions are small and do one thing
+- [ ] No mutable default arguments
+- [ ] Logging uses appropriate levels, does not leak sensitive data
+- [ ] No `print()` in production code
+
+### Performance
+- [ ] No N+1 query patterns
+- [ ] Large collections use generators or pagination
+- [ ] HTTP and database connections are pooled and reused
+- [ ] No blocking calls in async code paths
