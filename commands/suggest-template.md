@@ -321,7 +321,7 @@ When multiple templates could fit, show a comparison table relevant to the detec
 | Type hints | Yes | Yes | Yes |
 | Pydantic models | Basic | Deep (v2 patterns) | Basic |
 | Database patterns | No | SQLAlchemy + Alembic | No |
-| API design | No | Comprehensive | Inference APIs |
+| API design | No | Full (routers, middleware, auth, versioning) | Inference APIs |
 | GPU support | No | No | Yes |
 | Testing | pytest | httpx + pytest | pytest + GPU |
 ```
@@ -335,3 +335,39 @@ Adapt the comparison columns to match the actual templates being considered.
 3. In deep scan mode, read files but do NOT execute the project's build, test, or run commands. Only use read-only operations and git log/remote.
 4. If the project is clearly a monorepo (multiple independent services or packages), note this and suggest running the command from within each subproject directory.
 5. Always ground your recommendation in specific files and patterns you observed, not assumptions.
+
+## Output Calibration
+
+Your recommendation must sound like a senior engineer who just looked at the project, not like a consulting report. Be direct. Name the specific files and dependencies you found. Skip throat-clearing.
+
+### Bad output (do not do this)
+
+> Based on comprehensive analysis of the project structure and dependency ecosystem, the Python template would be a suitable choice for this project. The repository demonstrates characteristics consistent with Python-based development paradigms, and the template would provide robust coverage of the project's tooling requirements.
+
+This says nothing. It does not name a single file, dependency, or framework. It reads like a slide deck.
+
+### Good output (do this)
+
+> **Primary match: fastapi-project**
+> **Confidence: High**
+>
+> Evidence:
+> - `pyproject.toml` lists fastapi 0.104, sqlalchemy 2.0, alembic, pydantic 2.x
+> - `src/app/main.py` initializes a FastAPI app with APIRouter includes
+> - `tests/` uses httpx.AsyncClient with ASGITransport (matches the template's testing patterns)
+> - `alembic/` directory with migration scripts
+>
+> **What this template adds to your workflow:**
+> - Pydantic v2 model patterns (model_validator, field_serializer) that your current models do not use
+> - Alembic migration safety checks (no raw SQL in migrations, always test downgrade)
+> - Structured logging with request correlation IDs (your code currently uses print statements)
+>
+> **Secondary match: ai-ml-project**
+> Why: `requirements.txt` includes torch 2.1 and transformers. If you are serving models through your FastAPI routes, combine both templates with `/compose-template fastapi + ai-ml`.
+
+### What makes the good output work
+
+- Names exact files and versions found in the project
+- Lists specific template sections that fill gaps in the project's current setup
+- The secondary recommendation is grounded in a real dependency, not a guess
+- No filler words, no hedging, no "would be suitable"

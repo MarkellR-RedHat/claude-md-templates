@@ -492,6 +492,61 @@ The composed CLAUDE.md should follow this structure. Every section header that m
 
 ---
 
+## Output Calibration
+
+The composed CLAUDE.md must read like it was written by a senior engineer who knows all the tools in the stack, not like two documents stapled together. Be direct. Every rule should be an imperative.
+
+### Bad output (do not do this)
+
+```markdown
+## Testing
+
+This project uses a comprehensive testing strategy that encompasses both Python and Kubernetes testing paradigms. The testing approach facilitates quality assurance across multiple layers of the application stack.
+
+### Python Testing
+Tests should be written using pytest, which provides robust test infrastructure...
+
+### Kubernetes Testing
+Kubernetes testing leverages envtest to provide a scalable integration testing solution...
+```
+
+This is filler. "Comprehensive testing strategy" says nothing. "Facilitates quality assurance" is corporate noise. Nobody needs to be told that pytest "provides robust test infrastructure."
+
+### Good output (do this)
+
+```markdown
+## Testing
+
+### Unit Tests
+
+#### Python [Python]
+Run with `pytest tests/unit/ -v`. Use fixtures for database sessions and HTTP clients. Mock external services with `respx` or `pytest-httpx`. Async tests use `pytest-asyncio` with `mode=auto`.
+
+Coverage threshold: 85%. Run `pytest --cov=src --cov-fail-under=85`.
+
+#### Controller [Kubernetes]
+Use controller-runtime's fake client. Test each reconciliation path: create, update, delete, error. Assert status conditions after each reconcile call.
+
+### Integration Tests
+
+#### API [Python]
+Use `httpx.AsyncClient` with `ASGITransport`. Test against a real database (testcontainers or a pytest fixture that spins up PostgreSQL). Do not mock the database in integration tests.
+
+#### CRD Validation [Kubernetes]
+Use envtest. It runs a real API server and etcd. Test CRD validation, defaulting webhooks, and RBAC rules.
+
+### End-to-End Tests [Kubernetes]
+Use kind. Deploy the full stack (operator, CRDs, sample CR). Verify the operator creates the expected child resources. Tear down after each test.
+```
+
+### What makes the good output work
+
+- Each section starts with a command you can run or a tool you should use
+- No preamble explaining what testing is or why it matters
+- Rules are imperatives: "Use fixtures," "Mock external services," "Do not mock the database"
+- Domain labels (`[Python]`, `[Kubernetes]`) tell you where each rule comes from
+- Specific thresholds and tool names, not "robust" or "comprehensive"
+
 ## Error Handling
 
 If the user provides a template name that does not match any known template:
