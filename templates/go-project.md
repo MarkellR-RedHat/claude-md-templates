@@ -1,5 +1,12 @@
 # CLAUDE.md - Go Project
 
+<!-- Quick customize: Fill in the TODOs below, then delete this section -->
+<!-- TODO: Replace "myapp" with your actual binary name -->
+<!-- TODO: Set your Go module path (e.g., github.com/yourorg/yourrepo) -->
+<!-- TODO: Set your Go version (currently 1.21+) -->
+<!-- TODO: Update golangci-lint config to match your .golangci.yml -->
+<!-- TODO: Update Makefile targets to match your project -->
+
 ## Project Overview
 
 This is a Go project. It follows standard Go conventions and idioms. The codebase prioritizes readability, explicit error handling, and testability.
@@ -100,6 +107,146 @@ project-root/
 - Vet new dependencies before adding them. Check maintenance status, license, and security history.
 - Run `go mod tidy` before committing to remove unused dependencies.
 - Use `go mod vendor` if the project vendors dependencies. Keep the vendor directory in sync.
+
+### .gitignore essentials
+
+Include these entries in `.gitignore` for Go projects:
+```text
+# Build output
+bin/
+dist/
+
+# IDE
+.idea/
+.vscode/
+*.swp
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Test artifacts
+coverage.out
+coverage.html
+
+# Dependency cache (only if not vendoring)
+# vendor/
+
+# Generated binaries
+*.exe
+*.test
+*.prof
+```
+
+### golangci-lint configuration
+
+Use a `.golangci.yml` file in the project root to configure linting:
+```yaml
+# .golangci.yml
+run:
+  timeout: 5m
+  go: "1.21"
+
+linters:
+  enable:
+    - errcheck
+    - govet
+    - staticcheck
+    - unused
+    - gosimple
+    - ineffassign
+    - typecheck
+    - gofmt
+    - goimports
+    - misspell
+    - revive
+    - gosec
+    - unparam
+    - prealloc
+
+linters-settings:
+  revive:
+    rules:
+      - name: exported
+        arguments:
+          - "checkPrivateReceivers"
+  govet:
+    enable-all: true
+  misspell:
+    locale: US
+
+issues:
+  exclude-use-default: false
+  max-issues-per-linter: 0
+  max-same-issues: 0
+```
+
+### Godoc comment conventions
+
+Follow these conventions for documentation comments:
+```go
+// Package handler provides HTTP request handling for the API.
+//
+// Each handler function takes a context and request, validates input,
+// delegates to the service layer, and returns a structured response.
+package handler
+
+// UserService manages user lifecycle operations including
+// creation, authentication, and profile updates.
+type UserService struct {
+    store Store
+    cache Cache
+}
+
+// CreateUser registers a new user with the given profile data.
+// It returns the created user with a generated ID, or an error
+// if validation fails or the email is already registered.
+func (s *UserService) CreateUser(ctx context.Context, profile Profile) (*User, error) {
+```
+
+Rules for godoc comments:
+- Start comments with the name of the thing being documented.
+- Use complete sentences with proper punctuation.
+- Document exported types, functions, and package-level variables. No exceptions.
+- For deprecated items, add `// Deprecated: Use NewFunction instead.` on its own line.
+
+### Dependency injection patterns
+
+Prefer constructor injection over global state. Use interfaces to decouple components:
+```go
+// Define the interface where it is used, not where it is implemented.
+type UserStore interface {
+    GetUser(ctx context.Context, id string) (*User, error)
+    SaveUser(ctx context.Context, user *User) error
+}
+
+// Inject dependencies through the constructor.
+func NewUserService(store UserStore, logger *slog.Logger) *UserService {
+    return &UserService{
+        store:  store,
+        logger: logger,
+    }
+}
+```
+
+For complex dependency graphs, consider using [Wire](https://github.com/google/wire) for compile-time dependency injection:
+```go
+// wire.go
+//go:build wireinject
+
+func InitializeApp(cfg Config) (*App, error) {
+    wire.Build(
+        NewDatabase,
+        NewUserStore,
+        NewUserService,
+        NewHTTPHandler,
+        NewApp,
+    )
+    return nil, nil
+}
+```
+
+Run `wire ./...` to generate the dependency wiring code. Commit the generated `wire_gen.go` file.
 
 ## Testing
 

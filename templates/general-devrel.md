@@ -1,5 +1,12 @@
 # CLAUDE.md - General Developer Relations Project
 
+<!-- Quick customize: Fill in the TODOs below, then delete this section -->
+<!-- TODO: Set your team name (e.g., AI Platform DevRel) -->
+<!-- TODO: Set your GitHub org (e.g., github.com/redhat-developer) -->
+<!-- TODO: List your primary technologies (e.g., OpenShift, vLLM, Kubernetes) -->
+<!-- TODO: Set your SLA for community responses (currently 2 business days) -->
+<!-- TODO: Update the CI workflow to match your GitHub org settings -->
+
 ## Project Overview
 
 This is a Developer Relations project. It may include code samples, demos, tutorials, workshop materials, documentation, or community tooling. The primary audience is external developers, and everything produced here should be clear, runnable, and genuinely helpful.
@@ -39,6 +46,63 @@ sample-name/
   Makefile
   requirements.txt (or go.mod, package.json, etc.)
 ```
+
+### CI for code samples
+
+Add a GitHub Actions workflow to test code samples on every push and PR:
+```yaml
+# .github/workflows/test-samples.yml
+name: Test code samples
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  test-python:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        python-version: ["3.11", "3.12"]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+      - name: Run linting
+        run: ruff check .
+      - name: Run tests
+        run: pytest tests/ -v
+
+  test-go:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version: "1.21"
+      - name: Run tests
+        run: go test ./... -v -race
+      - name: Run linting
+        run: |
+          go install github.com/golangci/golangci-lint/cmd/golangci-lint@latest
+          golangci-lint run ./...
+
+  validate-yaml:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Validate YAML files
+        run: |
+          pip install yamllint
+          yamllint -c .yamllint.yml .
+```
+
+Keep all code samples tested. Untested samples rot within weeks.
 
 ## Documentation Standards
 
@@ -106,6 +170,75 @@ sample-name/
 - Track key metrics for content: page views, time on page, GitHub stars, forks, and issue activity.
 - Set goals for each piece of content. "Awareness" is not measurable. "500 unique visitors in the first month" is.
 - Review analytics quarterly and retire or update content that is underperforming or outdated.
+
+## Metrics Dashboard
+
+Track these KPIs for developer relations work:
+
+### Content metrics
+| Metric                     | Target           | Measurement tool       |
+|----------------------------|------------------|------------------------|
+| Blog post unique visitors  | 500+ per post    | Google Analytics, Plausible |
+| Time on page               | 3+ minutes       | Google Analytics       |
+| Code sample GitHub stars   | 50+ per repo     | GitHub API             |
+| Tutorial completion rate   | 60%+             | Custom tracking        |
+| Documentation page views   | Track monthly    | Google Analytics       |
+
+### Community metrics
+| Metric                     | Target           | Measurement tool       |
+|----------------------------|------------------|------------------------|
+| Issue response time        | Under 2 business days | GitHub API          |
+| PR review turnaround       | Under 3 business days | GitHub API          |
+| Community PRs merged       | Track monthly    | GitHub API             |
+| New contributors per quarter| Track quarterly | GitHub API             |
+| Stack Overflow answers     | Track monthly    | Stack Exchange API     |
+
+### Event metrics
+| Metric                     | Target           | Measurement tool       |
+|----------------------------|------------------|------------------------|
+| Talks submitted per quarter| 3 to 5           | CFP tracking sheet     |
+| Talks accepted             | 40%+ acceptance  | CFP tracking sheet     |
+| Workshop attendees         | 30+ per workshop | Event registration     |
+| Demo booth interactions    | 50+ per event    | Manual count           |
+
+Review these metrics monthly in a team standup. Quarterly, publish a summary to stakeholders.
+
+## Event Planning Checklist
+
+### 4 weeks before the event
+- [ ] Confirm talk or workshop is accepted and scheduled
+- [ ] Book travel and accommodation
+- [ ] Verify demo hardware and software requirements
+- [ ] Start building or updating slides and demo environment
+- [ ] Coordinate with co-presenters on content division
+
+### 2 weeks before the event
+- [ ] Complete slide deck and send for team review
+- [ ] Test all demos end-to-end on the target hardware
+- [ ] Record a backup video of every live demo
+- [ ] Prepare printed handouts or QR codes linking to resources
+- [ ] Confirm booth schedule and staffing if applicable
+
+### 1 week before the event
+- [ ] Do a full dry run of the presentation with timing
+- [ ] Update all code repos linked in the talk (READMEs, dependencies)
+- [ ] Prepare a "fast start" script that sets up the demo environment in one command
+- [ ] Load all slides and demos on a backup USB drive
+- [ ] Share your schedule with the team and set up a communication channel
+
+### Day of the event
+- [ ] Arrive 30 minutes early to test A/V and screen resolution
+- [ ] Close all notifications (Slack, email, calendar popups)
+- [ ] Open demo environment and verify connectivity
+- [ ] Have backup demo video queued and ready
+- [ ] Bring power adapters, dongles, and display cables
+
+### After the event
+- [ ] Share slides and demo repos on social media and team channels
+- [ ] Write a short trip report (3 to 5 key takeaways, follow-up actions)
+- [ ] Respond to new GitHub issues and questions within 48 hours
+- [ ] Update the metrics dashboard with event data
+- [ ] File expense reports within 5 business days
 
 ## Review Checklist
 

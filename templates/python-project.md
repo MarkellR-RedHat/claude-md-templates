@@ -1,5 +1,12 @@
 # CLAUDE.md - Python Project
 
+<!-- Quick customize: Fill in the TODOs below, then delete this section -->
+<!-- TODO: Replace "mypackage" with your actual package name -->
+<!-- TODO: Set your Python version (currently 3.11) -->
+<!-- TODO: Update the ruff config to match your pyproject.toml -->
+<!-- TODO: Update test commands to match your Makefile targets -->
+<!-- TODO: Set your CI tool (GitHub Actions, Tekton, Jenkins) -->
+
 ## Project Overview
 
 This is a Python project. It follows modern Python conventions with an emphasis on type safety, testability, and clear dependency management.
@@ -147,6 +154,65 @@ project-root/
 - Pin all dependency versions for applications. Use `uv lock` or `pip freeze > requirements.txt`.
 - For libraries, specify version ranges in `pyproject.toml` and pin in the lock file.
 
+### .gitignore essentials
+
+Include these entries in `.gitignore` for Python projects:
+```text
+# Virtual environments
+.venv/
+venv/
+env/
+
+# Python artifacts
+__pycache__/
+*.py[cod]
+*.egg-info/
+dist/
+build/
+
+# IDE
+.idea/
+.vscode/
+*.swp
+
+# Environment and secrets
+.env
+.env.local
+
+# Test and coverage
+.coverage
+htmlcov/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+```
+
+### Pre-commit hooks
+
+Use `pre-commit` to enforce quality checks before every commit:
+```yaml
+# .pre-commit-config.yaml
+repos:
+  - repo: https://github.com/astral-sh/ruff-pre-commit
+    rev: v0.8.0
+    hooks:
+      - id: ruff
+        args: [--fix]
+      - id: ruff-format
+  - repo: https://github.com/pre-commit/mirrors-mypy
+    rev: v1.13.0
+    hooks:
+      - id: mypy
+        additional_dependencies: [pydantic]
+```
+
+Install and activate:
+```bash
+pip install pre-commit
+pre-commit install
+pre-commit run --all-files
+```
+
 ## Testing
 
 ### Framework: pytest
@@ -224,6 +290,52 @@ python -m mypackage
 
 # Build container image
 podman build -t myapp:latest .
+```
+
+## Debugging
+
+### Common debugging patterns
+
+Use the built-in `breakpoint()` function (Python 3.7+) to drop into a debugger:
+```python
+def process_request(data: dict) -> dict:
+    result = transform(data)
+    breakpoint()  # Drops into pdb; remove before committing
+    return result
+```
+
+Useful `pdb` commands once inside the debugger:
+- `n` (next): Execute the next line.
+- `s` (step): Step into a function call.
+- `c` (continue): Continue until the next breakpoint.
+- `p <expr>` (print): Evaluate and print an expression.
+- `l` (list): Show the current source code context.
+- `bt` (backtrace): Show the full call stack.
+
+### Remote debugging
+
+For containers or remote environments, use `debugpy`:
+```python
+import debugpy
+debugpy.listen(("0.0.0.0", 5678))
+debugpy.wait_for_client()  # Blocks until a debugger attaches
+```
+
+Then connect from VS Code using the "Remote Attach" debug configuration.
+
+### Logging-based debugging
+
+When breakpoints are not practical (async code, production-adjacent environments), use structured logging:
+```python
+import structlog
+
+logger = structlog.get_logger()
+
+def process(data: dict) -> dict:
+    logger.debug("processing started", input_keys=list(data.keys()))
+    result = transform(data)
+    logger.debug("processing complete", output_keys=list(result.keys()))
+    return result
 ```
 
 ## Container Image

@@ -1,5 +1,12 @@
 # CLAUDE.md - Conference Proposals and CFPs
 
+<!-- Quick customize: Fill in the TODOs below, then delete this section -->
+<!-- TODO: Set your speaker name and email -->
+<!-- TODO: Set your company name and role -->
+<!-- TODO: List your previous speaking history (conferences, videos) -->
+<!-- TODO: Set the target year for proposals (currently shows 2025 in examples) -->
+<!-- TODO: Add your team's internal review process for proposals -->
+
 ## Project Overview
 
 This repo contains conference talk proposals, abstracts, and supporting materials. The goal is to maintain a library of proposals that can be adapted for different conferences and events.
@@ -16,6 +23,58 @@ Common conferences this content targets:
 - **PyCon**: Python, data science, ML, developer tooling
 - **Open Source Summit**: Linux, open source strategy, supply chain security
 - **AI_dev**: AI/ML infrastructure, model serving, LLM operations
+
+### CFP deadline tracking
+
+Track deadlines in a structured format. Add entries to a `deadlines.yaml` file:
+```yaml
+# deadlines.yaml
+cfps:
+  - conference: KubeCon NA
+    year: 2025
+    cfp_opens: "2025-04-01"
+    cfp_closes: "2025-06-15"
+    notification: "2025-07-15"
+    event_dates: "2025-11-10 to 2025-11-13"
+    location: "Salt Lake City, UT"
+    tracks:
+      - "AI + ML"
+      - "Platform Engineering"
+      - "Application Development"
+    submission_url: "https://events.linuxfoundation.org/"
+    notes: "250-word abstract limit"
+
+  - conference: Red Hat Summit
+    year: 2025
+    cfp_opens: "2025-01-15"
+    cfp_closes: "2025-03-01"
+    notification: "2025-04-01"
+    event_dates: "2025-06-22 to 2025-06-25"
+    location: "Boston, MA"
+    tracks:
+      - "AI/ML"
+      - "Hybrid Cloud"
+    submission_url: "https://www.redhat.com/summit"
+    notes: "Internal reviewers required before submission"
+```
+
+### Common session lengths
+
+Structure your content to fit these standard session formats:
+
+| Session type       | Duration    | Slides    | Structure                                    |
+|--------------------|-------------|-----------|----------------------------------------------|
+| Lightning talk     | 5 minutes   | 5 to 8    | One idea, one demo, one takeaway             |
+| Standard talk      | 25 to 30 min| 15 to 25  | Problem, approach, demo, results, next steps |
+| Deep dive          | 40 to 45 min| 25 to 40  | Add architecture details and extended demo   |
+| Workshop (half-day)| 2 to 3 hours| 15 to 20  | Slides minimal; focus on hands-on exercises  |
+| Workshop (full-day)| 6 to 7 hours| 20 to 30  | Mix of instruction and lab time with breaks  |
+| Keynote            | 15 to 20 min| 15 to 25  | High-level story arc with a strong close     |
+
+Timing tips:
+- Plan for 1 to 2 minutes per slide, depending on content density.
+- Reserve 5 minutes for Q&A in standard talks, 10 minutes in deep dives.
+- Demo time expands unpredictably. Practice demos with a timer and add a 30% buffer.
 
 ## Proposal Structure
 
@@ -87,6 +146,48 @@ When reusing a proposal for a different conference:
 - Tailor the "why this matters now" framing to the conference audience.
 - Update the target audience section. A KubeCon audience has different baseline knowledge than a PyCon audience.
 - Check the conference's content tracks and align your proposal with the right one.
+
+## Pitch Emails
+
+When submitting outside normal CFP channels (invited talks, meetups, podcast appearances), use this template:
+
+```text
+Subject: Talk proposal: [Title] for [Event/Meetup Name]
+
+Hi [Organizer Name],
+
+I'd like to propose a talk for [Event Name] on [Topic in plain language].
+
+The talk covers [1-2 sentence summary of what attendees will learn].
+I presented a version of this at [Previous Conference] and it was
+well received ([link to recording or slides if available]).
+
+Here is the quick pitch:
+
+Title: [Your Title]
+Format: [Talk / Workshop / Panel] ([Duration])
+Level: [Beginner / Intermediate / Advanced]
+
+Abstract:
+[2-3 sentence version of your abstract]
+
+About me:
+[2-3 sentences about your relevant background]
+
+I am happy to adjust the scope or format to fit your event. Let me
+know if you'd like a full proposal or have any questions.
+
+Best,
+[Your Name]
+[Your Title, Company]
+[Link to speaker profile or website]
+```
+
+Tips for pitch emails:
+- Keep the email under 250 words. Organizers read dozens of these.
+- Link to a previous recording if you have one. It saves them the guesswork about your speaking ability.
+- Offer flexibility on format and length. It shows you are collaborative.
+- Follow up once after 7 to 10 days if you do not hear back. After that, move on.
 
 ## Red Hat Product References
 

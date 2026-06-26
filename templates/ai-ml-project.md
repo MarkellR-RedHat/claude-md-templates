@@ -1,5 +1,12 @@
 # CLAUDE.md - AI/ML Project
 
+<!-- Quick customize: Fill in the TODOs below, then delete this section -->
+<!-- TODO: Replace model references with your actual model name (e.g., Llama 3, Granite) -->
+<!-- TODO: Set your ML framework (PyTorch, JAX, TensorFlow) -->
+<!-- TODO: Set your serving backend (vLLM, TGI, Triton, KServe) -->
+<!-- TODO: Set your GPU type (NVIDIA A100, H100, AMD MI300X) -->
+<!-- TODO: Update CUDA/ROCm version to match your environment -->
+
 ## Project Overview
 
 This is an AI/ML project. It may involve model training, fine-tuning, inference serving, or data pipeline work. The codebase follows standard Python conventions with additional considerations for GPU workloads, model artifacts, and reproducibility.
@@ -57,7 +64,41 @@ tests/
 
 ### Model Artifacts
 - Do not commit model weights, checkpoints, or large datasets to git.
-- Use `.gitignore` to exclude: `*.pt`, `*.bin`, `*.safetensors`, `*.gguf`, `checkpoints/`, `data/raw/`.
+- Add these entries to `.gitignore` for ML projects:
+  ```text
+  # Model weights and checkpoints
+  *.pt
+  *.pth
+  *.bin
+  *.safetensors
+  *.gguf
+  *.onnx
+  checkpoints/
+  models/
+
+  # Datasets
+  data/raw/
+  data/processed/
+  *.parquet
+  *.arrow
+
+  # Experiment tracking
+  wandb/
+  mlruns/
+  outputs/
+
+  # GPU profiling
+  *.nsys-rep
+  *.ncu-rep
+  *.qdrep
+  nsight_reports/
+
+  # Jupyter
+  .ipynb_checkpoints/
+
+  # Environment
+  .env
+  ```
 - Store model artifacts in S3-compatible storage (e.g., MinIO on OpenShift) or HuggingFace Hub.
 - Document the model source, version, and license in a `MODEL_CARD.md` file.
 
@@ -99,6 +140,37 @@ tests/
 - Log inference latency (p50, p95, p99) and throughput metrics.
 - Use async request handling for I/O-bound operations.
 - Set appropriate timeouts for model loading and inference.
+
+### vLLM serving configuration
+
+When using vLLM as the serving backend, configure it with these common flags:
+```bash
+# Start vLLM server with typical production settings
+python -m vllm.entrypoints.openai.api_server \
+    --model /path/to/model \
+    --tensor-parallel-size 2 \
+    --max-model-len 4096 \
+    --gpu-memory-utilization 0.90 \
+    --enforce-eager \
+    --port 8000
+
+# For quantized models
+python -m vllm.entrypoints.openai.api_server \
+    --model /path/to/model \
+    --quantization awq \
+    --dtype half
+```
+
+Key configuration parameters:
+| Parameter                  | Description                                    | Typical value |
+|----------------------------|------------------------------------------------|---------------|
+| `--tensor-parallel-size`   | Number of GPUs for tensor parallelism          | 1, 2, 4, or 8|
+| `--max-model-len`          | Maximum sequence length                         | 4096 or 8192  |
+| `--gpu-memory-utilization` | Fraction of GPU memory to use for KV cache     | 0.85 to 0.95  |
+| `--enforce-eager`          | Disable CUDA graph capture (useful for debugging)| off by default|
+| `--max-num-seqs`           | Maximum concurrent sequences                   | 256           |
+
+For Kubernetes deployments, set these as container args in your Deployment manifest and expose port 8000 via a Service.
 
 ### Container Images
 - Use Red Hat Universal Base Image (UBI) as the base image when deploying on OpenShift.
@@ -143,6 +215,73 @@ python -m src.serving.server --config configs/serving_config.yaml
 
 # Build container image
 podman build -t model-server:latest .
+```
+
+## Profiling
+
+### GPU profiling tools
+
+Use NVIDIA Nsight Systems for end-to-end profiling of GPU workloads:
+```bash
+# Profile a training run
+nsys profile --output=training_profile python train.py
+
+# Profile with GPU metrics
+nsys profile --gpu-metrics-device=all --output=detailed_profile python train.py
+
+# View the report
+nsys stats training_profile.nsys-rep
+```
+
+Use PyTorch Profiler for framework-level analysis:
+```python
+from torch.profiler import profile, record_function, ProfilerActivity
+
+with profile(
+    activities=[ProfilerActivity.CPU, ProfilerActivity.CUDA],
+    schedule=torch.profiler.schedule(wait=1, warmup=1, active=3),
+    on_trace_ready=torch.profiler.tensorboard_trace_handler("./profiler_logs"),
+    record_shapes=True,
+    profile_memory=True,
+) as prof:
+    for step, batch in enumerate(dataloader):
+        with record_function("forward"):
+            output = model(batch)
+        with record_function("backward"):
+            loss.backward()
+        prof.step()
+```
+
+### Memory profiling
+
+Track GPU memory allocation to find leaks and optimize batch sizes:
+```python
+# Print memory summary
+print(torch.cuda.memory_summary(device="cuda:0", abbreviated=True))
+
+# Snapshot memory state for visualization
+torch.cuda.memory._record_memory_history()
+# ... run your code ...
+torch.cuda.memory._dump_snapshot("memory_snapshot.pickle")
+```
+
+### Inference latency benchmarking
+
+Measure and report latency percentiles:
+```python
+import time
+import numpy as np
+
+latencies = []
+for _ in range(100):
+    start = time.perf_counter()
+    result = model.generate(input_tokens)
+    latencies.append(time.perf_counter() - start)
+
+p50 = np.percentile(latencies, 50)
+p95 = np.percentile(latencies, 95)
+p99 = np.percentile(latencies, 99)
+print(f"Latency p50={p50:.3f}s p95={p95:.3f}s p99={p99:.3f}s")
 ```
 
 ## Environment Variables
