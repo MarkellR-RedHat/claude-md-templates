@@ -771,6 +771,24 @@ podman build -t myapp:latest -f Containerfile .
 podman run -p 8000:8000 --env-file .env myapp:latest
 ```
 
+## Common Mistakes Claude Makes
+
+**Using Pydantic v1 patterns.** Claude writes `class Config:` instead of `model_config = ConfigDict(...)`, uses `@validator` instead of `@field_validator`, and calls `.dict()` instead of `.model_dump()`. This project uses Pydantic v2 exclusively.
+
+**Using synchronous database drivers.** Claude imports `psycopg2` or `sqlite3` instead of `asyncpg` or `aiosqlite`. Synchronous drivers block the event loop. Always use async drivers with SQLAlchemy 2.0 async engine.
+
+**Putting business logic in route handlers.** Claude writes database queries and complex logic directly in route functions. Route handlers should validate input, call a service, and return the response. Business logic belongs in the `services/` layer.
+
+**Missing `max_length` on string fields.** Claude creates Pydantic models with `str` fields that have no length constraint. Every string field needs `max_length` to prevent unbounded input.
+
+**Using `allow_origins=["*"]` for CORS.** Claude sets a wildcard CORS origin in middleware. Never use `["*"]` in production. List specific allowed origins.
+
+**Forgetting to await async calls.** Claude writes `result = get_user(user_id)` instead of `result = await get_user(user_id)` in async functions. The result is a coroutine object, not the actual data. Enable ruff's ASYNC rules to catch these.
+
+**Not handling background task failures.** Claude adds background tasks without try/except blocks. Exceptions in background tasks are silently swallowed. Always wrap background task code in error handling and log failures.
+
+**Creating N+1 query patterns.** Claude accesses ORM relationships in loops without eager loading. Use `selectinload()` or `joinedload()` on relationship queries to avoid N+1.
+
 ## Review Checklist
 
 Before merging:

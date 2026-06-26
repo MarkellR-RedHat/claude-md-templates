@@ -872,6 +872,24 @@ Makefile
 - Do not put multiple resource kinds in a single template file unless they are tightly coupled.
 - Do not use em dashes in NOTES.txt or template comments.
 
+## Common Mistakes Claude Makes
+
+**Accessing nested values without nil guards.** Claude writes `{{ .Values.monitoring.enabled }}` without checking if `monitoring` is defined. If the parent key is nil, the template panics. Use `{{ if and .Values.monitoring .Values.monitoring.enabled }}` or `{{ dig "monitoring" "enabled" false .Values }}`.
+
+**Using `template` instead of `include`.** Claude uses `{{ template "name" . }}` which writes directly to output and cannot be piped through functions. Use `{{ include "name" . | nindent 4 }}` so the output can be indented and manipulated.
+
+**Hardcoding namespaces in templates.** Claude writes `namespace: my-namespace` in template resources instead of using `{{ .Release.Namespace }}`.
+
+**Defaulting image tag to `latest`.** Claude sets `image.tag` to `latest` in values.yaml. Default to `""` and use `.Chart.AppVersion` in the template: `{{ .Values.image.tag | default .Chart.AppVersion }}`.
+
+**Not quoting string values in templates.** Claude renders values without quoting: `{{ .Values.image.tag }}` instead of `{{ .Values.image.tag | quote }}`. Unquoted values can cause YAML parsing errors when they look like numbers or booleans.
+
+**Forgetting `automountServiceAccountToken: false`.** Claude creates ServiceAccount resources with the token auto-mounted. Default to `false` unless the pod needs API server access.
+
+**Putting multiple resource kinds in one template file.** Claude combines Deployment, Service, and ConfigMap in a single template file. Use one file per resource kind unless they are tightly coupled (like a Job and its ConfigMap).
+
+**Not bumping Chart.yaml version.** Claude modifies chart templates without incrementing the `version` field in Chart.yaml. Every chart change needs a version bump.
+
 ## Review Checklist
 
 Before merging:

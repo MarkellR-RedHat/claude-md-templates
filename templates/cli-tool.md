@@ -620,6 +620,24 @@ cargo release --dry-run patch   # Rust
 python -m build                 # Python
 ```
 
+## Common Mistakes Claude Makes
+
+**Mixing stdout and stderr.** Claude prints error messages, progress updates, and diagnostic output to stdout. Only requested output goes to stdout. Errors, progress, and diagnostics go to stderr. This is essential for pipe compatibility.
+
+**Adding interactive prompts without TTY detection.** Claude adds confirmation prompts that break when the tool is used in scripts or CI pipelines. Check `isatty(stdin)` before prompting. Provide `--yes` to skip prompts.
+
+**Using `os.Exit()` or `sys.exit()` deep in library code.** Claude calls exit functions from within business logic. Only the `main` function should exit. Return errors and let `main` decide the exit code.
+
+**Ignoring the `NO_COLOR` environment variable.** Claude adds colored output without checking for `NO_COLOR`, `--no-color`, or non-TTY stdout. Always disable color when `NO_COLOR` is set, `--no-color` is passed, or stdout is not a terminal.
+
+**Hardcoding config file paths.** Claude reads configuration from `~/.config/mytool/config.yaml` without supporting `--config`, `$MYTOOL_CONFIG`, or XDG Base Directory discovery. Follow the config precedence chain: flags > env vars > config file > defaults.
+
+**Producing invalid JSON with `--output json`.** Claude generates JSON output that includes log messages, progress indicators, or trailing commas. JSON output mode must produce valid, parseable JSON with no extra text.
+
+**Missing help text on flags.** Claude adds flags without description strings. Every flag needs a help string. No exceptions.
+
+**Not handling SIGINT gracefully.** Claude lets the tool crash with a stack trace on Ctrl+C. Handle SIGINT to clean up temporary files, close connections, and exit with code 130.
+
 ### Code review checklist
 
 Before merging any CLI change:

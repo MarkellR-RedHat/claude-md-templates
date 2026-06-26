@@ -683,6 +683,30 @@ Order fields largest-to-smallest to minimize padding. Use `fieldalignment` from 
 - No `context.Background()` in library code. Accept and propagate context.
 - Do not commit generated files that can be regenerated (except `go.sum`).
 
+## Common Mistakes Claude Makes
+
+These are patterns Claude tends to produce that will fail code review. Watch for them.
+
+**Returning `error` and logging it.** Claude often logs an error and then returns it. This causes the same error to appear multiple times in logs as it propagates up the call stack. Either log the error (at the handler level) or return it (in library code). Never both.
+
+**Using `fmt.Errorf` without `%w`.** Claude wraps errors with `fmt.Errorf("failed: %s", err)` instead of `fmt.Errorf("failed: %w", err)`. Without `%w`, callers cannot use `errors.Is()` or `errors.As()` to inspect the underlying error. Always use `%w` for error wrapping.
+
+**Creating interfaces prematurely.** Claude defines interfaces in the package that implements them, not where they are consumed. In Go, interfaces belong to the consumer. Define them at the call site, not alongside the concrete type.
+
+**Using `sync.Mutex` when `sync.RWMutex` is appropriate.** For read-heavy data structures, Claude defaults to `sync.Mutex`. Use `sync.RWMutex` and take read locks for read operations.
+
+**Ignoring `context.Context` propagation.** Claude sometimes passes `context.Background()` or `context.TODO()` in library code instead of accepting and propagating the caller's context. Always accept `ctx context.Context` as the first parameter and pass it through to downstream calls.
+
+**Creating goroutines without lifecycle management.** Claude spawns goroutines with `go func()` without wiring them into an `errgroup`, `WaitGroup`, or cancellation mechanism. Every goroutine must have a way to stop.
+
+**Using `init()` functions.** Claude adds `init()` functions for package-level setup. Avoid `init()` in almost all cases. Use explicit initialization in `main()` or constructor functions instead.
+
+**Placing test helpers in a `utils` package.** Claude creates `testutils/` or `testing/` packages for shared test code. Put test helpers in the same package as the test, or use `testdata/` for fixtures.
+
+**Using pointer receivers inconsistently.** Claude mixes value and pointer receivers on the same type. If any method on a type uses a pointer receiver, all methods on that type should use pointer receivers.
+
+**Generating overly generic code.** When asked to implement something, Claude sometimes uses `interface{}` or `any` when a concrete type would be clearer and safer. Use generics or concrete types. Reserve `any` for genuinely polymorphic cases.
+
 ## Review Checklist
 
 Before merging:

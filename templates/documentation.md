@@ -314,52 +314,24 @@ WARNING: This action deletes all existing data. Back up your database first.
 
 ## Link Checking
 
-Run link checks in CI to catch broken links before they reach production.
+Run link checks in CI to catch broken links before they reach production. Use Lychee for Markdown source files and htmltest for built HTML output.
 
-### Lychee (recommended for Markdown)
+### Lychee configuration
 ```yaml
 # .lychee.toml
 exclude_path = ["node_modules", ".git", "public"]
 max_concurrency = 16
 timeout = 30
 accept = [200, 204]
-exclude = [
-    "localhost",
-    "127.0.0.1",
-    "example\\.com",
-]
+exclude = ["localhost", "127.0.0.1", "example\\.com"]
 ```
 
 ```bash
-# Check all Markdown files
-lychee --config .lychee.toml "docs/**/*.md"
-
-# Check built HTML output
-lychee --config .lychee.toml "public/**/*.html"
+lychee --config .lychee.toml "docs/**/*.md"        # Check Markdown source
+lychee --config .lychee.toml "public/**/*.html"     # Check built HTML
 ```
 
-### htmltest (for built HTML)
-```yaml
-# .htmltest.yml
-DirectoryPath: "public"
-CheckExternal: true
-CheckInternal: true
-IgnoreURLs:
-  - "example.com"
-```
-
-```bash
-htmltest
-```
-
-### CI integration (GitHub Actions)
-```yaml
-- name: Check links
-  uses: lycheeverse/lychee-action@v1
-  with:
-    args: --config .lychee.toml "docs/**/*.md"
-    fail: true
-```
+Integrate link checking into CI using `lycheeverse/lychee-action@v1` (see the CI validation pipeline example above).
 
 ## Image Handling
 
@@ -408,40 +380,35 @@ Include a CONTRIBUTING.md file that covers:
 - Maintain a list of "quick fixes" (typos, broken links, missing alt text) that new contributors can pick up.
 - Pair new contributors with an experienced reviewer for their first 2-3 PRs.
 
-## Localization Workflow
+## Localization and Internationalization
 
-### Translation management
-- Use a translation management system (TMS) like Crowdin, Transifex, or Weblate.
-- Extract translatable strings from docs and sync them to the TMS automatically.
-- Set up a CI workflow that exports new source strings to the TMS on every merge to main.
-
-### Translation process
-- Prioritize pages for translation based on traffic. Translate the top 20% of pages first.
-- Provide context notes for translators: screenshots, glossary terms, and examples of correct usage.
-- Use translation memory to maintain consistency across pages and reduce repeated work.
-
-### Locale testing
-- Build and preview the site in each translated locale before publishing.
-- Check for layout issues: text expansion (German and French text is typically 30% longer than English), right-to-left languages, and character encoding.
-- Validate that code samples are not translated. Code stays in English.
-
-## Writing for Internationalization
-
+### Writing for translation
 - Use simple, clear sentences. Avoid idioms, slang, and culturally specific references.
 - Write "for example" instead of "e.g." and "that is" instead of "i.e." These abbreviations do not translate well.
 - Avoid humor and wordplay. They rarely survive translation.
 - Use complete sentences. Telegraphic style ("Config file. Must exist.") is harder to translate.
 - Do not embed text in images. Extract text into alt text or captions so it can be translated.
 
+### Translation workflow
+- Use a translation management system (TMS) like Crowdin, Transifex, or Weblate.
+- Set up CI to export new source strings to the TMS on every merge to main.
+- Prioritize pages for translation based on traffic. Translate the top 20% of pages first.
+- Provide context notes for translators: screenshots, glossary terms, and usage examples.
+- Use translation memory to maintain consistency and reduce repeated work.
+
+### Locale testing
+- Build and preview the site in each translated locale before publishing.
+- Check for text expansion (German and French text is typically 30% longer than English), right-to-left layout, and character encoding.
+- Validate that code samples are not translated. Code stays in English.
+
 ## Vale Linter
 
-Use Vale for automated style enforcement:
+Use Vale for automated style enforcement. Install with `brew install vale` (macOS) or `sudo snap install vale` (Linux).
 
 ```ini
 # .vale.ini
 StylesPath = .vale/styles
 MinAlertLevel = suggestion
-
 Packages = RedHat, write-good
 
 [*.md]
@@ -451,20 +418,7 @@ BasedOnStyles = Vale, RedHat, write-good
 BasedOnStyles = Vale, RedHat, write-good
 ```
 
-```bash
-# Install Vale
-brew install vale   # macOS
-sudo snap install vale  # Linux
-
-# Sync style packages
-vale sync
-
-# Check documentation
-vale docs/
-
-# Check a single file
-vale docs/getting-started/installation.md
-```
+Run `vale sync` to download style packages, then `vale docs/` to check all content.
 
 ## Accessibility
 
@@ -500,56 +454,49 @@ vale docs/getting-started/installation.md
 ## Common Commands
 
 ```bash
-# MkDocs: serve locally
-mkdocs serve --dev-addr localhost:8000
-
-# MkDocs: build
-mkdocs build --strict
-
-# Hugo: serve locally
-hugo server --buildDrafts
-
-# Hugo: build
-hugo --minify
-
-# Antora: generate site
-antora antora-playbook.yml
-
-# Antora: generate with local sources
-antora antora-playbook.yml --to-dir build/site
-
-# Check links
-lychee "docs/**/*.md"
-
-# Run Vale linter
-vale docs/
-
-# Optimize images
-find docs -name "*.png" -exec pngquant --force --quality=65-80 --skip-if-larger {} \;
+mkdocs serve --dev-addr localhost:8000   # MkDocs: serve locally
+mkdocs build --strict                    # MkDocs: build (strict mode catches warnings)
+hugo server --buildDrafts                # Hugo: serve locally with drafts
+hugo --minify                            # Hugo: production build
+antora antora-playbook.yml               # Antora: generate site
+lychee "docs/**/*.md"                    # Check links
+vale docs/                               # Run Vale linter
+find docs -name "*.png" -exec pngquant --force --quality=65-80 --skip-if-larger {} \;  # Optimize images
 ```
 
 ## .gitignore
 
 ```
-# Build output
 public/
 site/
 build/
 _site/
-
-# Node modules (if using npm-based tooling)
 node_modules/
-
-# Editor files
 *.swp
 *.swo
 .idea/
 .vscode/
-
-# OS files
 .DS_Store
 Thumbs.db
 ```
+
+## Common Mistakes Claude Makes
+
+**Mixing Diataxis content types on one page.** Claude writes a tutorial that drifts into reference documentation, or a how-to guide that explains concepts at length. Each page should be one type: tutorial, how-to, reference, or explanation. Link to other pages for different content types.
+
+**Skipping heading levels.** Claude jumps from H2 to H4, skipping H3. Screen readers use heading hierarchy for navigation. Never skip levels.
+
+**Using "click here" as link text.** Claude writes `For more info, [click here](url)`. Link text should describe the destination: `See the [installation guide](url)`.
+
+**Writing titles that are not searchable.** Claude uses vague titles like "Step 2" or "Configuration" instead of descriptive titles like "Configure the database connection". Every title should include the action and the technology.
+
+**Adding too many admonitions.** Claude uses NOTE, WARNING, and TIP boxes excessively. If everything is a warning, nothing is a warning. Use admonitions sparingly for genuinely important information.
+
+**Not including alt text on images.** Claude adds images with empty or generic alt text. Alt text should describe what the image shows so the information is accessible without the image.
+
+**Writing passive voice in procedures.** Claude writes "The command should be run" instead of "Run the command." Use active, imperative voice for all procedural steps.
+
+**Putting critical information only in code blocks.** Claude embeds important configuration details or requirements in code samples without explaining them in surrounding text. Code blocks are not indexed by all search engines. State the important points in text and illustrate with code.
 
 ## Review Checklist
 

@@ -623,6 +623,22 @@ python schemas/registry/check_compatibility.py \
 podman build -t pipeline-runner:latest .
 ```
 
+## Common Mistakes Claude Makes
+
+**Using schema inference in production reads.** Claude calls `spark.read.parquet(path)` without specifying a schema. Schema inference reads extra data, guesses types (often incorrectly), and creates non-deterministic schemas. Always pass an explicit schema.
+
+**Writing UDFs for operations the DataFrame API can handle.** Claude creates Python UDFs for string splitting, date formatting, and null handling. UDFs serialize data between JVM and Python, killing performance. Use built-in Spark functions (`F.split`, `F.to_date`, `F.coalesce`) first.
+
+**Creating unbounded DataFrame caches.** Claude calls `.persist()` or `.cache()` without ever calling `.unpersist()`. Cached DataFrames consume memory for the entire SparkSession lifetime. Always unpersist when the DataFrame is no longer needed.
+
+**Ignoring null semantics in joins.** Claude writes joins without considering that `NULL != NULL` in SQL. Rows with null join keys silently disappear in inner joins. Handle nulls explicitly before joining, or use coalesce on join keys.
+
+**Hardcoding file paths.** Claude uses absolute paths like `/data/output/` in pipeline code. Use configuration objects with environment-specific paths. Paths should come from config files or environment variables.
+
+**Using `datetime.now()` instead of execution date parameters.** Claude calls `datetime.now()` inside DAG tasks for date-based processing. Use Airflow's `{{ ds }}` or `{{ data_interval_start }}` Jinja templates so the pipeline is idempotent and backfillable.
+
+**Writing pipelines that are not idempotent.** Claude appends data without checking if the partition already exists. Re-running the pipeline creates duplicates. Use partition overwrite mode or merge/upsert patterns.
+
 ## Review Checklist
 
 ### Code Quality

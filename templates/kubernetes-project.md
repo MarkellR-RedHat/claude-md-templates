@@ -754,6 +754,24 @@ Use Cluster API (CAPI) for declarative cluster lifecycle management. Define clus
 - Consistent labels across clusters (`cluster` label on all metrics).
 - Central log store (Loki, Elasticsearch) with cluster identification in every log line.
 
+## Common Mistakes Claude Makes
+
+**Hardcoding namespace names in manifests.** Claude writes `namespace: my-app` directly in resource manifests instead of using Helm templating or Kustomize overlays. Use `{{ .Release.Namespace }}` in Helm or let Kustomize set the namespace.
+
+**Setting liveness probes that check dependencies.** Claude configures liveness probes to check database connectivity. A database outage then restarts all pods, making recovery impossible. Liveness probes should check only process health. Use readiness probes for dependency checks.
+
+**Using `latest` as the default image tag.** Claude defaults to `image: myapp:latest` in deployment manifests. Always pin image tags to a specific version or digest.
+
+**Creating overly permissive RBAC.** Claude grants `*` verbs or `*` resources in ClusterRoles. Enumerate exact resources and verbs. Start with the minimum and add as needed.
+
+**Forgetting topologySpreadConstraints.** Claude creates Deployments without pod spread constraints. For production workloads, always spread pods across failure domains (zones and nodes).
+
+**Omitting resource requests.** Claude creates pods without resource requests or limits. Every container needs resource requests. Memory limits are required. Without them, the scheduler cannot make informed placement decisions.
+
+**Writing NetworkPolicy with incorrect selector logic.** Claude puts multiple selectors in a single `from` list item thinking they create OR conditions. Multiple selectors in one list item create AND conditions. Separate list items create OR.
+
+**Missing PodDisruptionBudget.** Claude creates Deployments for production workloads without a PDB. Without a PDB, cluster upgrades and node drains can take down your entire application simultaneously.
+
 ## Review Checklist
 
 Before merging:

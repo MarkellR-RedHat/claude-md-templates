@@ -429,6 +429,24 @@ content/
     editorial-calendar.md             # or link to your tracking tool
 ```
 
+## Common Mistakes Claude Makes
+
+**Writing in passive voice.** Claude defaults to "the application can be deployed" instead of "deploy the application." Use active voice throughout, especially in introductions and instructions.
+
+**Burying the useful information.** Claude writes 3 paragraphs of context before getting to the point. Put the most important information in the first two paragraphs. Lead with what the reader needs to do or learn.
+
+**Using "simple" and "easy" to describe technical steps.** Claude writes "simply run the command" or "it's easy to configure." What is simple for the writer may not be simple for the reader. Describe the steps without editorializing their difficulty.
+
+**Producing generic introductions.** Claude starts posts with "In today's rapidly evolving landscape..." or "As organizations increasingly adopt..." These openings say nothing. Start with the specific problem the post solves.
+
+**Not pinning dependency versions in code samples.** Claude writes `pip install vllm` instead of `pip install vllm==0.4.2`. Pin versions so code samples work for readers who find the post months later.
+
+**Using screenshots of code instead of code blocks.** Claude suggests embedding code as images. Always use real code blocks that readers can copy. Screenshots of code cannot be searched, copied, or read by screen readers.
+
+**Writing walls of text.** Claude produces long paragraphs without headers, lists, or code blocks. Break up content for scanning. Most developers do not read documentation top to bottom.
+
+**Missing calls to action.** Claude ends posts without telling the reader what to do next. Every post needs a clear next step: try the tutorial, read the docs, join the community, open an issue.
+
 ## Review Checklist
 
 Before submitting content for review:

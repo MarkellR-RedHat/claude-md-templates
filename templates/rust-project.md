@@ -132,15 +132,12 @@ fn load_config(path: &Path) -> Result<Config> {
         .with_context(|| format!("failed to read config file: {}", path.display()))?;
     let config: Config = toml::from_str(&contents)
         .context("failed to parse config as TOML")?;
-    config.validate()
-        .context("config validation failed")?;
     Ok(config)
 }
 
 fn main() -> Result<()> {
     let config = load_config(Path::new("/etc/myapp/config.toml"))
         .context("failed to initialize application")?;
-    // ...
     Ok(())
 }
 ```
@@ -180,31 +177,25 @@ For libraries, do not choose a runtime. Accept a generic `Future`.
 ```rust
 use tokio_util::sync::CancellationToken;
 
-async fn run_server(token: CancellationToken) -> anyhow::Result<()> {
-    let listener = TcpListener::bind("0.0.0.0:8080").await?;
-    loop {
-        tokio::select! {
-            accepted = listener.accept() => {
-                let (stream, addr) = accepted?;
-                let child_token = token.child_token();
-                tokio::spawn(handle_connection(stream, addr, child_token));
-            }
-            _ = token.cancelled() => {
-                tracing::info!("shutdown signal received, stopping accept loop");
-                break;
-            }
-        }
-    }
-    Ok(())
-}
-
-// In main: wire up ctrl-c
 let token = CancellationToken::new();
+
+// Wire up ctrl-c to trigger cancellation
 let shutdown_token = token.clone();
 tokio::spawn(async move {
     tokio::signal::ctrl_c().await.ok();
     shutdown_token.cancel();
 });
+
+// In your server loop: select! on cancellation alongside work
+loop {
+    tokio::select! {
+        conn = listener.accept() => {
+            let child_token = token.child_token();  // per-task tokens
+            tokio::spawn(handle_connection(conn?, child_token));
+        }
+        _ = token.cancelled() => { break; }
+    }
+}
 ```
 
 **Structured concurrency with TaskTracker:**
@@ -231,30 +222,12 @@ tracker.wait().await;
 tracing::info!("all tasks completed cleanly");
 ```
 
-**Backpressure with bounded channels:**
-
-```rust
-use tokio::sync::mpsc;
-
-let (tx, mut rx) = mpsc::channel::<WorkItem>(1024);  // bounded!
-
-// Producer: send() awaits if the channel is full
-tokio::spawn(async move {
-    for item in items {
-        tx.send(item).await.expect("receiver dropped");
-    }
-});
-
-// Consumer: process at its own pace
-while let Some(item) = rx.recv().await {
-    process(item).await;
-}
-```
+**Backpressure:** Always use bounded channels (`mpsc::channel(1024)`) and semaphores. The bounded `send()` awaits when the channel is full, providing natural backpressure. Unbounded channels and unlimited spawning will eat memory under load.
 
 **Tower Service and Layer pattern:**
 
 ```rust
-use tower::{Service, ServiceBuilder, ServiceExt};
+use tower::ServiceBuilder;
 use std::time::Duration;
 
 // Compose layers declaratively
@@ -265,7 +238,7 @@ let service = ServiceBuilder::new()
     .layer(TraceLayer::new_for_http())
     .service(MyHandler);
 
-// Custom Layer: add a request ID header
+// Custom Layer wraps an inner service
 #[derive(Clone)]
 struct RequestIdLayer;
 
@@ -275,29 +248,9 @@ impl<S> tower::Layer<S> for RequestIdLayer {
         RequestIdService { inner }
     }
 }
-
-#[derive(Clone)]
-struct RequestIdService<S> { inner: S }
-
-impl<S, B> Service<http::Request<B>> for RequestIdService<S>
-where
-    S: Service<http::Request<B>>,
-{
-    type Response = S::Response;
-    type Error = S::Error;
-    type Future = S::Future;
-
-    fn poll_ready(&mut self, cx: &mut Context<'_>) -> Poll<Result<(), Self::Error>> {
-        self.inner.poll_ready(cx)
-    }
-
-    fn call(&mut self, mut req: http::Request<B>) -> Self::Future {
-        req.headers_mut().insert("x-request-id",
-            uuid::Uuid::new_v4().to_string().parse().unwrap());
-        self.inner.call(req)
-    }
-}
 ```
+
+Write custom middleware by implementing `tower::Layer` (wraps a service) and `tower::Service` (handles poll_ready + call). The Layer creates the Service; the Service delegates to the inner service after adding behavior.
 
 **Connection pooling:** Use `deadpool` or `bb8` for async connection pools to databases and other services.
 
@@ -344,31 +297,26 @@ async fn get_user(db: &Pool, user_id: i64) -> Result<User> {
 ```rust
 use opentelemetry::trace::TracerProvider;
 use opentelemetry_otlp::WithExportConfig;
-use opentelemetry_sdk::{runtime, trace as sdktrace, Resource};
+use opentelemetry_sdk::trace as sdktrace;
 use tracing_opentelemetry::OpenTelemetryLayer;
-use tracing_subscriber::{fmt, EnvFilter, prelude::*};
 
 fn init_tracing() -> anyhow::Result<()> {
     let exporter = opentelemetry_otlp::SpanExporter::builder()
         .with_tonic()
         .with_endpoint("http://localhost:4317")
         .build()?;
-
     let provider = sdktrace::SdkTracerProvider::builder()
         .with_batch_exporter(exporter)
-        .with_resource(Resource::builder()
+        .with_resource(opentelemetry_sdk::Resource::builder()
             .with_service_name("my-service")
             .build())
         .build();
 
-    let tracer = provider.tracer("my-service");
-
     tracing_subscriber::registry()
         .with(fmt::layer().with_target(true))
         .with(EnvFilter::from_default_env())
-        .with(OpenTelemetryLayer::new(tracer))
+        .with(OpenTelemetryLayer::new(provider.tracer("my-service")))
         .init();
-
     Ok(())
 }
 ```
@@ -406,24 +354,11 @@ cargo +nightly miri test
 
 # Strict mode: catches alignment and provenance issues
 MIRIFLAGS="-Zmiri-symbolic-alignment-check -Zmiri-strict-provenance" cargo +nightly miri test
-
-# Run a specific test under Miri
-cargo +nightly miri test -- my_unsafe_test
-
-# Miri with isolation disabled (needed for file I/O in tests)
-MIRIFLAGS="-Zmiri-disable-isolation" cargo +nightly miri test
 ```
 
-Miri cannot test FFI calls or inline assembly. Write pure-Rust wrappers around unsafe operations and test those wrappers under Miri.
+Miri cannot test FFI calls or inline assembly. Write pure-Rust wrappers around unsafe operations and test those under Miri. Use `-Zmiri-disable-isolation` if tests need file I/O.
 
-**Fuzzing** with cargo-fuzz for any code that parses untrusted input:
-
-```bash
-# One-time setup
-cargo install cargo-fuzz
-cargo fuzz init
-cargo fuzz add parse_input
-```
+**Fuzzing** with cargo-fuzz for any code that parses untrusted input. Set up with `cargo install cargo-fuzz && cargo fuzz init && cargo fuzz add parse_input`:
 
 ```rust
 // fuzz/fuzz_targets/parse_input.rs
@@ -436,55 +371,9 @@ fuzz_target!(|data: &[u8]| {
 });
 ```
 
-For structured fuzzing, derive `Arbitrary` on input types:
+For structured fuzzing, derive `Arbitrary` on input types and use them as the `fuzz_target!` parameter. Run with `cargo +nightly fuzz run parse_input -- -max_total_time=300`. Minimize crashing inputs with `cargo +nightly fuzz tmin parse_input artifacts/parse_input/crash-*`.
 
-```rust
-// fuzz/fuzz_targets/parse_structured.rs
-#![no_main]
-use libfuzzer_sys::fuzz_target;
-use arbitrary::Arbitrary;
-
-#[derive(Arbitrary, Debug)]
-struct FuzzInput {
-    name: String,
-    count: u32,
-    enabled: bool,
-}
-
-fuzz_target!(|input: FuzzInput| {
-    let _ = my_crate::process_request(input.name, input.count, input.enabled);
-});
-```
-
-```bash
-# Run for 5 minutes
-cargo +nightly fuzz run parse_input -- -max_total_time=300
-
-# Run with a corpus directory
-cargo +nightly fuzz run parse_input corpus/parse_input/
-
-# Minimize a crashing input
-cargo +nightly fuzz tmin parse_input artifacts/parse_input/crash-abc123
-```
-
-**Supply chain security with cargo-vet:**
-
-```bash
-# Initialize vet for your project (creates supply-chain/ directory)
-cargo vet init
-
-# Check all dependencies against audit records
-cargo vet check
-
-# Certify a crate you have reviewed
-cargo vet certify serde 1.0.197
-
-# Import audits from trusted organizations
-cargo vet trust --all mozilla
-
-# When updating deps, see what needs review
-cargo vet suggest
-```
+**Supply chain security with cargo-vet:** Run `cargo vet init` to set up, then `cargo vet certify <crate> <version>` after reviewing a dep. Import audits from trusted organizations with `cargo vet trust --all mozilla`. Use `cargo vet suggest` when updating deps to see what needs review.
 
 **RUSTSEC advisories:** Run `cargo audit --deny warnings` in CI. The `cargo deny check advisories` command covers this too if you use cargo-deny.
 
@@ -513,19 +402,10 @@ use criterion::{black_box, criterion_group, criterion_main, BenchmarkId, Criteri
 
 fn bench_parse(c: &mut Criterion) {
     let mut group = c.benchmark_group("parse");
-
     for size in [64, 256, 1024, 4096] {
         let input = generate_input(size);
-        group.bench_with_input(
-            BenchmarkId::new("json", size),
-            &input,
-            |b, input| b.iter(|| my_crate::parse_json(black_box(input))),
-        );
-        group.bench_with_input(
-            BenchmarkId::new("toml", size),
-            &input,
-            |b, input| b.iter(|| my_crate::parse_toml(black_box(input))),
-        );
+        group.bench_with_input(BenchmarkId::new("json", size), &input,
+            |b, input| b.iter(|| my_crate::parse_json(black_box(input))));
     }
     group.finish();
 }
@@ -534,31 +414,21 @@ criterion_group!(benches, bench_parse);
 criterion_main!(benches);
 ```
 
-```bash
-# Run benchmarks and save a baseline
-cargo bench -- --save-baseline main
-
-# Run again after changes and compare
-cargo bench -- --baseline main
-```
-
-Never optimize without measuring. Use `BenchmarkGroup` for parameterized benchmarks across input sizes.
+Never optimize without measuring. Save baselines with `cargo bench -- --save-baseline main`, then compare after changes with `cargo bench -- --baseline main`.
 
 **Profiling:** Use `cargo flamegraph` to generate flamegraphs from binaries or benchmarks. Build with `release-with-debug` profile for useful stack traces.
 
 **Allocation tracking with DHAT:**
 
 ```toml
-# Cargo.toml
+# Cargo.toml -- gate behind a feature flag
 [features]
 dhat-heap = ["dhat"]
-
 [dependencies]
 dhat = { version = "0.3", optional = true }
 ```
 
 ```rust
-// src/main.rs
 #[cfg(feature = "dhat-heap")]
 #[global_allocator]
 static ALLOC: dhat::Alloc = dhat::Alloc;
@@ -566,16 +436,11 @@ static ALLOC: dhat::Alloc = dhat::Alloc;
 fn main() {
     #[cfg(feature = "dhat-heap")]
     let _profiler = dhat::Profiler::new_heap();
-
     // ... rest of main
 }
 ```
 
-```bash
-# Run with allocation tracking, then open dhat-heap.json in a viewer
-cargo run --features dhat-heap
-# Open https://nnethercote.github.io/dh_view/dh_view.html and load the JSON
-```
+Run with `cargo run --features dhat-heap`, then open the generated `dhat-heap.json` at https://nnethercote.github.io/dh_view/dh_view.html.
 
 **Zero-copy patterns:** Accept `&str` over `String` and `&[u8]` over `Vec<u8>` in parameters. Use `Cow<'_, str>` when allocation is sometimes needed. Use `bytes::Bytes` for networking. Use `zerocopy` or `bytemuck` for binary format deserialization. Prefer `&[T]` slices over `&Vec<T>`.
 
@@ -620,46 +485,26 @@ mod tests {
         let result = service.get_user(42);
         assert!(matches!(result, Err(ServiceError::NotFound { .. })));
     }
-
-    #[test]
-    fn test_user_service_saves_normalized_email() {
-        let mut mock_repo = MockUserRepository::new();
-        mock_repo
-            .expect_save()
-            .withf(|user| user.email == "test@example.com")
-            .times(1)
-            .returning(|_| Ok(()));
-
-        let service = UserService::new(Box::new(mock_repo));
-        service.create_user("Test@Example.COM").unwrap();
-    }
 }
 ```
 
 **Snapshot testing with insta:**
 
 ```rust
-#[cfg(test)]
-mod tests {
-    use insta::{assert_snapshot, assert_json_snapshot};
+#[test]
+fn test_error_display() {
+    let err = ServiceError::NotFound { id: "abc-123".into(), kind: "document" };
+    insta::assert_snapshot!(err.to_string(), @"resource not found: abc-123");
+}
 
-    #[test]
-    fn test_error_display() {
-        let err = ServiceError::NotFound {
-            id: "abc-123".into(),
-            kind: "document",
-        };
-        assert_snapshot!(err.to_string(), @"resource not found: abc-123");
-    }
-
-    #[test]
-    fn test_api_response_shape() {
-        let response = build_user_response(&test_user());
-        assert_json_snapshot!(response, {
-            ".created_at" => "[timestamp]",
-            ".id" => "[uuid]",
-        });
-    }
+#[test]
+fn test_api_response_shape() {
+    let response = build_user_response(&test_user());
+    // Redact volatile fields so snapshots stay stable
+    insta::assert_json_snapshot!(response, {
+        ".created_at" => "[timestamp]",
+        ".id" => "[uuid]",
+    });
 }
 ```
 
@@ -685,12 +530,6 @@ mod tests {
             // Parser may return Err, but it must never panic
             let _ = my_crate::parse(&s);
         }
-
-        #[test]
-        fn bounded_values_stay_in_range(val in 0u32..1000) {
-            let result = my_crate::clamp_and_scale(val);
-            assert!(result <= 100);
-        }
     }
 }
 ```
@@ -698,25 +537,17 @@ mod tests {
 **Async testing with tokio:**
 
 ```rust
-#[cfg(test)]
-mod tests {
-    use tokio::sync::oneshot;
+#[tokio::test]
+async fn test_async_handler() {
+    let pool = setup_test_db().await;
+    let response = handle_request(&pool, test_request()).await.unwrap();
+    assert_eq!(response.status(), 200);
+}
 
-    #[tokio::test]
-    async fn test_async_handler() {
-        let pool = setup_test_db().await;
-        let response = handle_request(&pool, test_request()).await.unwrap();
-        assert_eq!(response.status(), 200);
-    }
-
-    #[tokio::test]
-    async fn test_with_timeout() {
-        let result = tokio::time::timeout(
-            Duration::from_secs(5),
-            slow_operation(),
-        ).await;
-        assert!(result.is_ok(), "operation should complete within 5 seconds");
-    }
+#[tokio::test]
+async fn test_with_timeout() {
+    let result = tokio::time::timeout(Duration::from_secs(5), slow_operation()).await;
+    assert!(result.is_ok(), "operation should complete within 5 seconds");
 }
 ```
 
@@ -805,14 +636,11 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        target:
-          - x86_64-unknown-linux-gnu
-          - aarch64-unknown-linux-gnu
+        target: [x86_64-unknown-linux-gnu, aarch64-unknown-linux-gnu]
     steps:
       - uses: actions/checkout@v4
       - uses: dtolnay/rust-toolchain@stable
         with: { targets: "${{ matrix.target }}" }
-      - uses: Swatinem/rust-cache@v2
       - run: cargo check --target ${{ matrix.target }} --all-features
 
   security:
@@ -823,7 +651,6 @@ jobs:
       - run: cargo install cargo-audit cargo-deny
       - run: cargo audit --deny warnings
       - run: cargo deny check advisories licenses bans sources
-      - run: cargo vet check
 ```
 
 **Cross-compilation:** Test `x86_64-unknown-linux-gnu`, `aarch64-unknown-linux-gnu`, `x86_64-apple-darwin`, and `aarch64-apple-darwin` in a matrix. For macOS targets, use `runs-on: macos-latest`.
@@ -898,6 +725,32 @@ cargo +nightly miri test                                 # unsafe verification
 cargo tree -d                                            # duplicate deps
 podman build -t my-crate:latest .                        # container
 ```
+
+## Common Mistakes Claude Makes
+
+These are patterns Claude tends to produce that will fail code review. Watch for them.
+
+**Using `.unwrap()` liberally.** Claude scatters `.unwrap()` calls throughout code, especially in examples and implementations. In library code, use `?` for propagation. In binary code, use `.context("description")?` with anyhow. Reserve `.unwrap()` for cases where you can prove the value is always `Some`/`Ok`, and add a comment explaining why.
+
+**Cloning to satisfy the borrow checker.** Claude adds `.clone()` when it hits a borrow checker error instead of restructuring the code to avoid the borrow conflict. Fix the ownership issue. Cloning is sometimes correct, but it should be a deliberate choice with a reason, not a band-aid.
+
+**Using `String` when `&str` suffices.** Claude takes `String` parameters when the function only reads the string. Accept `&str` for read-only access, `impl Into<String>` or `String` only when you need ownership.
+
+**Missing `#[must_use]` on functions that return important values.** Claude omits `#[must_use]` on functions whose return value should not be silently discarded (like `Result`, custom builders, or validation functions).
+
+**Not using `thiserror` for library errors.** Claude defines error types with manual `Display` and `Error` impls instead of using `thiserror` derive macros. Use `thiserror` for library error types. It is less code and less error-prone.
+
+**Creating overly broad error enums.** Claude puts every possible error variant in a single error enum. Split error types by subsystem. A database error enum and an API error enum are better than one giant `AppError` with 20 variants.
+
+**Ignoring clippy pedantic lints.** Claude writes code that passes default clippy but fails pedantic lints (e.g., `needless_pass_by_value`, `redundant_closure_for_method_calls`, `manual_let_else`). Run `cargo clippy --all-targets -- -W clippy::pedantic` during development.
+
+**Using `Box<dyn Error>` in library crates.** Claude reaches for `Box<dyn Error>` in library code. This erases the error type and prevents callers from matching on specific error variants. Use concrete error types with `thiserror` in libraries.
+
+**Not deriving common traits.** Claude forgets to derive `Debug`, `Clone`, `PartialEq`, or `Eq` on types that need them. Derive `Debug` on everything. Derive `Clone`, `PartialEq`, and `Eq` when the type semantics support it.
+
+**Using `tokio::spawn` without `Send` bounds.** Claude spawns tasks that hold non-Send types (like `Rc` or `std::sync::MutexGuard`) across await points. Use `Arc` instead of `Rc` in async code. Drop mutex guards before awaiting.
+
+**Putting `mod tests` at the top of the file.** Claude sometimes places the test module before the implementation code. Put `#[cfg(test)] mod tests` at the bottom of the file, after all implementation code.
 
 ## Review Checklist
 

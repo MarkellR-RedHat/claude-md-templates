@@ -640,6 +640,22 @@ operator-sdk scorecard ./bundle
 make undeploy && make uninstall
 ```
 
+## Common Mistakes Claude Makes
+
+**Updating status without re-fetching the resource.** Claude reads the resource at the top of Reconcile, does work, then updates status on the original object. By then, the resource version may have changed, causing a conflict error. Always re-fetch the resource immediately before a status update, or use `retry.RetryOnConflict`.
+
+**Creating resources without OwnerReferences.** Claude creates Deployments and Services without setting `controllerutil.SetControllerReference`. Without owner references, these resources are not garbage collected when the parent CR is deleted.
+
+**Updating metadata inside Reconcile without a predicate filter.** Claude modifies annotations or labels on the CR during reconciliation. This triggers another reconciliation, creating an infinite loop. Use `GenerationChangedPredicate` to ignore metadata-only changes.
+
+**Watching high-churn resources without narrow predicates.** Claude watches Pods or Events without filtering. This floods the work queue and causes reconciliation storms. Add `ResourceVersionChangedPredicate` or `LabelSelectorPredicate` to narrow the watch.
+
+**Forgetting `WithStatusSubresource` in fake client tests.** Claude creates fake client tests without `WithStatusSubresource(resource)`. Without it, `Status().Update()` calls silently do nothing, and tests pass incorrectly.
+
+**Adding finalizers to resources the controller does not reconcile.** Claude adds a finalizer to a related resource. If the controller stops running, that finalizer blocks deletion forever. Only add finalizers to resources your controller is responsible for.
+
+**Using `log.Error` and returning the error.** Claude logs an error and then returns it from Reconcile. The controller-runtime framework also logs returned errors. This creates duplicate log entries. Either log the error with context and return `nil`, or return the error and let the framework log it.
+
 ## Review Checklist
 
 Before merging:

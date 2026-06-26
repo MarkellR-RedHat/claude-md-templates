@@ -463,6 +463,24 @@ Review content and community metrics monthly. Review adoption and funnel metrics
 - [ ] Update metrics dashboard. File expenses within 5 business days.
 - [ ] Log developer feedback in the feedback tracker
 
+## Common Mistakes Claude Makes
+
+**Writing code samples that do not run.** Claude produces pseudocode or incomplete snippets in READMEs and tutorials. Every code sample must run without modification on the specified platform and version. Test in a clean environment.
+
+**Ignoring error handling in sample code.** Claude writes demo code with bare `except:` blocks or ignored errors. Developers copy sample code directly into their projects. Include proper error handling even in examples.
+
+**Using internal URLs or jargon.** Claude references internal tools, wikis, or team-specific terminology in external-facing content. Write for developers outside your organization.
+
+**Not providing a cleanup section in tutorials.** Claude writes workshops and tutorials that create cloud resources without telling participants how to tear them down. Every tutorial that creates resources must include a cleanup section.
+
+**Creating overly complex demo environments.** Claude designs demos that require 5+ services, specific cloud accounts, and extensive setup. Keep demos self-contained. Use containers, local clusters (kind, minikube), or mock services.
+
+**Writing generic community responses.** Claude drafts issue responses like "Thanks for reporting this. We'll look into it." Be specific: acknowledge the problem, explain the current understanding, and give a timeline or next step.
+
+**Missing prerequisites in tutorials.** Claude starts tutorials with step 1 without listing what the reader needs installed, configured, or running. Always start with a Prerequisites section listing exact versions.
+
+**Not dating content.** Claude creates blog posts and tutorials without clear publication dates or version references. Always include when the content was written and what versions it covers. Stale undated content erodes trust faster than missing content.
+
 ## Review Checklist
 
 Before publishing any DevRel content, verify the following:

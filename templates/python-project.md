@@ -690,6 +690,34 @@ except Exception:
 # Fix: catch specific exceptions, log or handle meaningfully
 ```
 
+## Common Mistakes Claude Makes
+
+These are patterns Claude tends to produce that will fail code review. Watch for them.
+
+**Using `Optional[str]` instead of `str | None`.** Claude defaults to the old `typing.Optional` and `typing.List` syntax. Use modern Python 3.10+ union syntax: `str | None`, `list[str]`, `dict[str, int]`. The project targets Python 3.11+.
+
+**Adding `from __future__ import annotations` unnecessarily.** Claude adds this import when the project already targets Python 3.11+ where modern type syntax works natively. Only use it when you need to avoid circular imports with `TYPE_CHECKING` guards.
+
+**Writing overly broad exception handlers.** Claude catches `Exception` when it should catch a specific exception type. Every `except` block should name the most specific exception that can occur at that point.
+
+**Creating a `utils.py` dumping ground.** Claude puts unrelated helper functions in a single `utils.py` file. Give utility functions a proper home: string manipulation goes in a `formatting` module, date helpers go in a `dates` module.
+
+**Using `print()` instead of the project's logging setup.** Claude reaches for `print()` for debug output and status messages. Use `structlog` or the standard `logging` module configured in the project. Never use `print()` in production code.
+
+**Ignoring the `src/` layout.** When creating new modules, Claude sometimes places them at the project root instead of under `src/mypackage/`. Follow the existing directory structure.
+
+**Not using `pathlib.Path`.** Claude uses `os.path.join()` and string concatenation for file paths. Use `pathlib.Path` for all file path operations.
+
+**Writing synchronous code in async contexts.** Claude uses `requests` or blocking I/O in async functions. Use `httpx` for HTTP calls in async code. Use `asyncio.to_thread()` to run blocking operations.
+
+**Missing `return` type annotations.** Claude adds parameter type hints but forgets the return type. Every function signature needs both parameter types and a return type: `def process(data: dict[str, Any]) -> ProcessResult:`.
+
+**Putting test fixtures in the wrong scope.** Claude creates `scope="session"` fixtures for mutable objects that should be `scope="function"`. Default to function scope. Only use wider scopes for expensive, read-only setup.
+
+**Defaulting to class-based designs.** Claude creates classes with a single method when a plain function would be simpler. If a class has only `__init__` and one other method, it should probably be a function.
+
+**Using `time.sleep()` in async code.** Claude uses `time.sleep()` instead of `await asyncio.sleep()` in async functions. `time.sleep()` blocks the entire event loop.
+
 ## Review Checklist
 
 Before merging, verify every item. This is not a formality.

@@ -808,6 +808,24 @@ print(f"p50={np.percentile(latencies, 50):.3f}s "
 | `HF_TOKEN`            | HuggingFace Hub access token     | (optional)    |
 | `WANDB_API_KEY`       | Weights and Biases API key       | (optional)    |
 
+## Common Mistakes Claude Makes
+
+**Committing model weights to git.** Claude adds model files, checkpoints, or large datasets to the repository. These files should be tracked with DVC or stored in S3/HuggingFace Hub. Add `*.pt *.pth *.bin *.safetensors *.gguf *.onnx` to `.gitignore`.
+
+**Hardcoding model paths.** Claude writes `model = load("/models/llama-7b")` with an absolute path. Use configuration objects or environment variables (`MODEL_PATH`) for all model paths.
+
+**Using `torch.cuda.is_available()` without a CPU fallback.** Claude writes code that fails on machines without GPUs. Always provide a CPU fallback path. Unit tests must run on CPU.
+
+**Ignoring GPU memory management.** Claude loads models without considering GPU memory limits. Use `device_map="auto"` for large models, set `max_memory` constraints, and monitor with `torch.cuda.memory_summary()`.
+
+**Concatenating user input into system prompts.** Claude builds prompts by string concatenation: `prompt = system_prompt + user_input`. This enables prompt injection. Use the model's role-based message format to separate system instructions from user input.
+
+**Not setting random seeds for reproducibility.** Claude runs training or evaluation without setting seeds. Set `random.seed()`, `np.random.seed()`, `torch.manual_seed()`, and `torch.cuda.manual_seed_all()` at the start of every experiment.
+
+**Using `float32` when `bfloat16` is available.** Claude defaults to full precision on GPUs that support bfloat16 (A100, H100). Use `torch.bfloat16` for training and inference on Ampere+ GPUs. It has better numerical range than float16 and does not require loss scaling.
+
+**Creating evaluation metrics after seeing results.** Claude defines evaluation criteria post-hoc to justify results. Define task-specific metrics before starting training or fine-tuning. Compare against the base model and report the delta.
+
 ## Review Checklist
 
 Before merging changes:

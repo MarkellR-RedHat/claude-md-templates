@@ -56,6 +56,9 @@ PREVIEW_MODE=false
 LIST_MODE=false
 SHOW_HELP=false
 INTERACTIVE_MODE=false
+CHECK_MODE=false
+COMBINE_MODE=false
+COMBINE_ARG=""
 TEMPLATE_ARG=""
 TARGET_DIR_ARG=""
 
@@ -77,6 +80,20 @@ while [[ $# -gt 0 ]]; do
             INTERACTIVE_MODE=true
             shift
             ;;
+        -c|--combine)
+            COMBINE_MODE=true
+            if [[ -n "${2:-}" ]]; then
+                COMBINE_ARG="$2"
+                shift 2
+            else
+                echo -e "${RED}Error: --combine requires template names separated by + (e.g., \"python-project + kubernetes-project\").${NC}"
+                exit 1
+            fi
+            ;;
+        --check)
+            CHECK_MODE=true
+            shift
+            ;;
         -t|--template)
             if [[ -n "${2:-}" ]]; then
                 TEMPLATE_ARG="$2"
@@ -96,7 +113,7 @@ while [[ $# -gt 0 ]]; do
             fi
             ;;
         *)
-            echo -e "${RED}Error: Unknown option '${1}'${NC}"
+            echo -e "${RED}Error: Unknown option '${1}'.${NC}"
             echo "Run with --help for usage information."
             exit 1
             ;;
@@ -117,18 +134,24 @@ if [ "${SHOW_HELP}" = true ]; then
     echo "  -i, --interactive           Walk through template selection with guided questions"
     echo "  -t, --template NAME         Install a specific template by name (skip selection)"
     echo "  -d, --dir PATH              Set the target directory (skip directory prompt)"
+    echo "  -c, --combine NAMES         Combine two or more templates separated by +"
+    echo "      --check                 Check if target directory has a CLAUDE.md and report its status"
     echo ""
     echo "Modes:"
     echo "  Default                     Show templates, pick one, copy to target directory"
     echo "  Interactive (--interactive)  Answer questions about your project, get a recommendation"
+    echo "  Combine (--combine)         Concatenate multiple templates into one CLAUDE.md"
+    echo "  Check (--check)             Report age and remaining TODOs in existing CLAUDE.md"
     echo ""
     echo "Examples:"
-    echo "  ./install.sh                          # Standard selection mode"
-    echo "  ./install.sh --interactive             # Guided template selection"
-    echo "  ./install.sh --template python-project # Install Python template directly"
-    echo "  ./install.sh -t go-project -d ~/myapp  # Install Go template to ~/myapp"
-    echo "  ./install.sh --preview                 # Preview templates before choosing"
-    echo "  ./install.sh --list                    # List all available templates"
+    echo "  ./install.sh                                       # Standard selection mode"
+    echo "  ./install.sh --interactive                          # Guided template selection"
+    echo "  ./install.sh --template python-project              # Install Python template directly"
+    echo "  ./install.sh -t go-project -d ~/myapp               # Install Go template to ~/myapp"
+    echo "  ./install.sh --preview                              # Preview templates before choosing"
+    echo "  ./install.sh --list                                 # List all available templates"
+    echo "  ./install.sh --combine \"python-project + kubernetes-project\"  # Combine templates"
+    echo "  ./install.sh --check -d ~/myapp                     # Check existing CLAUDE.md status"
     echo ""
     exit 0
 fi
@@ -140,7 +163,7 @@ echo ""
 
 # Check that templates directory exists
 if [ ! -d "${TEMPLATES_DIR}" ]; then
-    echo -e "${RED}Error: templates directory not found at ${TEMPLATES_DIR}${NC}"
+    echo -e "${RED}Error: Templates directory not found at ${TEMPLATES_DIR}.${NC}"
     exit 1
 fi
 
@@ -155,7 +178,7 @@ for template in "${TEMPLATES_DIR}"/*.md; do
 done
 
 if [ ${#templates[@]} -eq 0 ]; then
-    echo -e "${RED}Error: No template files found in ${TEMPLATES_DIR}${NC}"
+    echo -e "${RED}Error: No template files found in ${TEMPLATES_DIR}.${NC}"
     exit 1
 fi
 
@@ -225,6 +248,76 @@ find_template_by_name() {
     return 1
 }
 
+# Function to suggest the closest matching template name
+suggest_closest_template() {
+    local search="$1"
+    local best_match=""
+    local best_score=999
+
+    for name in "${template_names[@]}"; do
+        # Exact match: no suggestion needed
+        if [ "${name}" = "${search}" ]; then
+            echo ""
+            return 0
+        fi
+
+        local score=999
+
+        # Check if search is a substring of template name
+        if [[ "${name}" == *"${search}"* ]]; then
+            # Prefer shorter difference (closer match)
+            local diff=$(( ${#name} - ${#search} ))
+            score=${diff}
+        # Check if template name starts with the search term
+        elif [[ "${name}" == "${search}"* ]]; then
+            local diff=$(( ${#name} - ${#search} ))
+            score=${diff}
+        # Check if search starts with the template name
+        elif [[ "${search}" == "${name}"* ]]; then
+            local diff=$(( ${#search} - ${#name} ))
+            score=$(( diff + 5 ))
+        fi
+
+        if [ "${score}" -lt "${best_score}" ]; then
+            best_score=${score}
+            best_match="${name}"
+        fi
+    done
+
+    if [ -n "${best_match}" ] && [ "${best_score}" -lt 999 ]; then
+        echo "${best_match}"
+    else
+        echo ""
+    fi
+}
+
+# Function to resolve a template name, with fuzzy matching fallback
+resolve_template_name() {
+    local search="$1"
+
+    # Try exact match first
+    if find_template_by_name "${search}" >/dev/null 2>&1; then
+        echo "${search}"
+        return 0
+    fi
+
+    # Try fuzzy match
+    local suggestion
+    suggestion=$(suggest_closest_template "${search}")
+    if [ -n "${suggestion}" ]; then
+        echo -e "${YELLOW}Template '${search}' not found. Did you mean '${suggestion}'?${NC}" >&2
+        echo -ne "${BOLD}Use '${suggestion}'? (Y/n):${NC} " >&2
+        read -r use_suggestion
+        if [[ ! "${use_suggestion}" =~ ^[Nn]$ ]]; then
+            echo "${suggestion}"
+            return 0
+        fi
+    fi
+
+    echo ""
+    return 1
+}
+
 # Function to install a template
 install_template() {
     local template_path="$1"
@@ -277,6 +370,214 @@ install_template() {
         echo ""
     fi
 }
+
+# ============================================================
+# Check Mode (--check)
+# ============================================================
+if [ "${CHECK_MODE}" = true ]; then
+    if [ -n "${TARGET_DIR_ARG}" ]; then
+        check_dir="${TARGET_DIR_ARG}"
+    else
+        check_dir="$(pwd)"
+    fi
+
+    # Expand ~ to home directory
+    check_dir="${check_dir/#\~/$HOME}"
+
+    # Resolve to absolute path
+    check_dir="$(cd "${check_dir}" 2>/dev/null && pwd)" || {
+        echo -e "${RED}Error: Directory '${check_dir}' does not exist.${NC}"
+        exit 1
+    }
+
+    check_file="${check_dir}/CLAUDE.md"
+
+    if [ ! -f "${check_file}" ]; then
+        echo -e "${YELLOW}No CLAUDE.md found in ${check_dir}${NC}"
+        echo ""
+        echo -e "  Run ${BOLD}./install.sh${NC} to create one."
+        exit 0
+    fi
+
+    echo -e "${GREEN}Found CLAUDE.md at:${NC} ${check_file}"
+    echo ""
+
+    # Report file age
+    if [ "$(uname)" = "Darwin" ]; then
+        mod_epoch=$(stat -f "%m" "${check_file}")
+    else
+        mod_epoch=$(stat -c "%Y" "${check_file}")
+    fi
+    now_epoch=$(date +%s)
+    age_seconds=$(( now_epoch - mod_epoch ))
+    age_days=$(( age_seconds / 86400 ))
+
+    if [ "${age_days}" -eq 0 ]; then
+        age_hours=$(( age_seconds / 3600 ))
+        if [ "${age_hours}" -eq 0 ]; then
+            age_minutes=$(( age_seconds / 60 ))
+            echo -e "  ${BOLD}Last modified:${NC} ${age_minutes} minute(s) ago"
+        else
+            echo -e "  ${BOLD}Last modified:${NC} ${age_hours} hour(s) ago"
+        fi
+    else
+        echo -e "  ${BOLD}Last modified:${NC} ${age_days} day(s) ago"
+    fi
+
+    # Report TODO count
+    todo_count=$(grep -c "TODO" "${check_file}" 2>/dev/null || echo "0")
+    if [ "${todo_count}" -gt 0 ]; then
+        echo -e "  ${BOLD}TODO markers:${NC}  ${YELLOW}${todo_count} remaining${NC}"
+    else
+        echo -e "  ${BOLD}TODO markers:${NC}  ${GREEN}none (fully customized)${NC}"
+    fi
+
+    # Report line count
+    line_count=$(wc -l < "${check_file}" | tr -d ' ')
+    echo -e "  ${BOLD}Total lines:${NC}   ${line_count}"
+
+    echo ""
+    if [ "${todo_count}" -gt 0 ]; then
+        echo -e "${CYAN}Your CLAUDE.md still has ${todo_count} TODO marker(s) to fill in.${NC}"
+        echo -e "${CYAN}Open the file and search for TODO to find them.${NC}"
+    else
+        echo -e "${GREEN}Your CLAUDE.md looks fully customized.${NC}"
+    fi
+
+    if [ "${age_days}" -gt 90 ]; then
+        echo -e "${YELLOW}It has been over 90 days since the last update. Consider reviewing for accuracy.${NC}"
+    fi
+    echo ""
+    exit 0
+fi
+
+# ============================================================
+# Combine Mode (--combine)
+# ============================================================
+if [ "${COMBINE_MODE}" = true ]; then
+    # Parse the combine argument: split on +
+    IFS='+' read -ra combine_parts <<< "${COMBINE_ARG}"
+
+    combine_names=()
+    combine_paths=()
+
+    for part in "${combine_parts[@]}"; do
+        # Trim whitespace
+        trimmed=$(echo "${part}" | xargs)
+        if [ -z "${trimmed}" ]; then
+            continue
+        fi
+
+        # Resolve template name with fuzzy matching
+        resolved=$(resolve_template_name "${trimmed}") || {
+            echo -e "${RED}Error: Template '${trimmed}' not found and no close match available.${NC}"
+            echo ""
+            echo "Available templates:"
+            for name in "${template_names[@]}"; do
+                echo "  ${name}"
+            done
+            exit 1
+        }
+
+        template_idx=$(find_template_by_name "${resolved}") || {
+            echo -e "${RED}Error: Template '${resolved}' not found.${NC}"
+            exit 1
+        }
+        combine_names+=("${resolved}")
+        combine_paths+=("${templates[$template_idx]}")
+    done
+
+    if [ ${#combine_names[@]} -lt 2 ]; then
+        echo -e "${RED}Error: --combine requires at least two template names separated by + (e.g., \"python-project + kubernetes-project\").${NC}"
+        exit 1
+    fi
+
+    echo -e "${BOLD}Combining templates:${NC}"
+    for name in "${combine_names[@]}"; do
+        echo -e "  ${BLUE}*${NC} ${name}"
+    done
+    echo ""
+
+    # Get target directory
+    if [ -n "${TARGET_DIR_ARG}" ]; then
+        target_dir="${TARGET_DIR_ARG}"
+    else
+        echo -e "${BOLD}Enter the target directory (where CLAUDE.md will be created):${NC}"
+        echo -e "  ${CYAN}Press Enter to use the current directory ($(pwd))${NC}"
+        read -r target_dir
+        if [ -z "${target_dir}" ]; then
+            target_dir="$(pwd)"
+        fi
+    fi
+
+    # Expand ~ to home directory
+    target_dir="${target_dir/#\~/$HOME}"
+
+    # Resolve to absolute path
+    target_dir="$(cd "${target_dir}" 2>/dev/null && pwd)" || {
+        echo -e "${RED}Error: Directory '${target_dir}' does not exist.${NC}"
+        exit 1
+    }
+
+    target_file="${target_dir}/CLAUDE.md"
+
+    # Check if CLAUDE.md already exists
+    if [ -f "${target_file}" ]; then
+        echo ""
+        echo -e "${YELLOW}Warning: ${target_file} already exists.${NC}"
+        echo -ne "${BOLD}Overwrite? (y/N):${NC} "
+        read -r overwrite
+        if [[ ! "${overwrite}" =~ ^[Yy]$ ]]; then
+            echo "Aborted. No files were changed."
+            exit 0
+        fi
+    fi
+
+    # Build the combined file
+    {
+        echo "# Combined CLAUDE.md"
+        echo ""
+        echo "# This file was generated by combining the following templates:"
+        for name in "${combine_names[@]}"; do
+            echo "#   - ${name}"
+        done
+        echo "#"
+        echo "# NOTE: This is a simple concatenation. For an intelligent merge that"
+        echo "# resolves conflicts and deduplicates sections, use the /compose-template"
+        echo "# slash command inside Claude Code."
+        echo ""
+
+        for i in "${!combine_names[@]}"; do
+            echo ""
+            echo "# ============================================================"
+            echo "# Template: ${combine_names[$i]}"
+            echo "# ============================================================"
+            echo ""
+            cat "${combine_paths[$i]}"
+            echo ""
+        done
+    } > "${target_file}"
+
+    echo ""
+    echo -e "${GREEN}Done. Combined CLAUDE.md has been created at:${NC}"
+    echo "  ${target_file}"
+    echo ""
+    echo -e "${CYAN}Next steps:${NC}"
+    echo "  1. Open ${target_file} in your editor"
+    echo "  2. Review and resolve any overlapping sections between templates"
+    echo "  3. Search for TODO markers and fill in project-specific details"
+    echo "  4. For a smarter merge, use /compose-template inside Claude Code"
+    echo ""
+
+    # Show TODO count
+    todo_count=$(grep -c "TODO" "${target_file}" 2>/dev/null || echo "0")
+    if [ "${todo_count}" -gt 0 ]; then
+        echo -e "  ${YELLOW}Found ${todo_count} TODO markers to customize.${NC}"
+        echo ""
+    fi
+
+    exit 0
+fi
 
 # ============================================================
 # Interactive Mode
@@ -421,7 +722,7 @@ if [ "${INTERACTIVE_MODE}" = true ]; then
             esac
             ;;
         *)
-            echo -e "${RED}Invalid choice. Running standard selection mode instead.${NC}"
+            echo -e "${RED}Error: Invalid choice. Running standard selection mode instead.${NC}"
             echo ""
             INTERACTIVE_MODE=false
             ;;
@@ -430,7 +731,7 @@ if [ "${INTERACTIVE_MODE}" = true ]; then
     if [ -n "${recommended}" ]; then
         echo ""
         echo -e "${GREEN}Recommended template: ${BOLD}${recommended}${NC}"
-        local desc="${TEMPLATE_DESC[$recommended]:-}"
+        desc="${TEMPLATE_DESC[$recommended]:-}"
         if [ -n "${desc}" ]; then
             echo -e "  ${DIM}${desc}${NC}"
         fi
@@ -455,11 +756,17 @@ if [ "${INTERACTIVE_MODE}" = true ]; then
             *) secondary="" ;;
         esac
 
+        add_compose_comment=false
         if [ -n "${secondary}" ] && [ "${secondary}" != "${recommended}" ]; then
             echo ""
             echo -e "${CYAN}Consider combining templates. After installing, you can use:${NC}"
             echo -e "  ${BOLD}/compose-template ${recommended} + ${secondary}${NC}"
             echo ""
+            echo -ne "${BOLD}Add a reminder comment at the top of CLAUDE.md suggesting /compose-template? (Y/n):${NC} "
+            read -r add_comment
+            if [[ ! "${add_comment}" =~ ^[Nn]$ ]]; then
+                add_compose_comment=true
+            fi
         fi
 
         # Confirm and install
@@ -489,6 +796,23 @@ if [ "${INTERACTIVE_MODE}" = true ]; then
             exit 1
         }
         install_template "${templates[$template_idx]}" "${target_dir}"
+
+        # If user opted for the compose comment, prepend it
+        if [ "${add_compose_comment}" = true ]; then
+            target_dir_resolved="${target_dir/#\~/$HOME}"
+            target_dir_resolved="$(cd "${target_dir_resolved}" 2>/dev/null && pwd)"
+            target_file="${target_dir_resolved}/CLAUDE.md"
+            if [ -f "${target_file}" ]; then
+                compose_comment="<!-- TODO: This project also involves ${secondary}. Run /compose-template ${recommended} + ${secondary} in Claude Code to intelligently merge both templates. -->"
+                # Prepend the comment
+                tmp_file=$(mktemp)
+                { echo "${compose_comment}"; echo ""; cat "${target_file}"; } > "${tmp_file}"
+                mv "${tmp_file}" "${target_file}"
+                echo -e "  ${CYAN}Added /compose-template reminder at the top of CLAUDE.md.${NC}"
+                echo ""
+            fi
+        fi
+
         exit 0
     fi
 fi
@@ -497,13 +821,18 @@ fi
 # Direct template installation (--template flag)
 # ============================================================
 if [ -n "${TEMPLATE_ARG}" ]; then
-    template_idx=$(find_template_by_name "${TEMPLATE_ARG}") || {
+    resolved_name=$(resolve_template_name "${TEMPLATE_ARG}") || {
         echo -e "${RED}Error: Template '${TEMPLATE_ARG}' not found.${NC}"
         echo ""
         echo "Available templates:"
         for name in "${template_names[@]}"; do
             echo "  ${name}"
         done
+        exit 1
+    }
+    TEMPLATE_ARG="${resolved_name}"
+    template_idx=$(find_template_by_name "${TEMPLATE_ARG}") || {
+        echo -e "${RED}Error: Template '${TEMPLATE_ARG}' not found.${NC}"
         exit 1
     }
 
@@ -532,8 +861,10 @@ show_template_list false
 
 # List mode: print templates and exit
 if [ "${LIST_MODE}" = true ]; then
-    echo -e "${CYAN}Tip: Run without --list to install a template interactively.${NC}"
+    echo -e "${CYAN}Tip: Run without --list to install a template.${NC}"
     echo -e "${CYAN}     Run with --interactive for guided template selection.${NC}"
+    echo -e "${CYAN}     Run with --combine to merge multiple templates.${NC}"
+    echo ""
     exit 0
 fi
 

@@ -400,6 +400,26 @@ proposals/
   deadlines.yaml
 ```
 
+## Common Mistakes Claude Makes
+
+These are patterns Claude tends to produce in conference proposals that reviewers will reject.
+
+**Writing abstracts that sound like marketing copy.** Claude uses phrases like "cutting-edge," "revolutionary," and "game-changing." Conference reviewers reject product pitches. Describe what the audience will learn in concrete, technical terms.
+
+**Being vague about takeaways.** Claude writes "attendees will gain a deep understanding of..." without specifying what they will be able to DO afterward. Use action verbs: "deploy," "configure," "evaluate," "debug." Reviewers want to know the practical outcome.
+
+**Overpromising scope.** Claude writes abstracts that promise to cover an entire technology stack in 30 minutes. Be honest about scope. A focused talk on one aspect of a topic is stronger than a surface-level tour of everything.
+
+**Using the same abstract for every conference.** Claude produces generic abstracts that do not reference the specific conference, its audience, or its tracks. Tailor every abstract to the conference. Reference the track name. Acknowledge the audience's baseline knowledge.
+
+**Writing speaker bios focused on job titles.** Claude creates bios like "Senior Software Engineer at Company with 10 years of experience." Reviewers care about relevant expertise: open source contributions, previous talks, published work on the topic.
+
+**Skipping the "why now" framing.** Claude writes abstracts about topics without explaining why they are timely and relevant. Reviewers need to justify their selections. Help them by connecting your topic to current trends, recent releases, or pressing problems.
+
+**Creating learning objectives that are too abstract.** Claude writes "Understand the fundamentals of X." This is not measurable. Write objectives that start with observable verbs: "Deploy a GPU-accelerated inference service using vLLM on OpenShift."
+
+**Not differentiating from similar talks.** Claude produces abstracts that could describe any talk on the topic. Mention what makes YOUR approach or experience unique. Include specific data, benchmarks, or lessons from real deployments.
+
 ## Review Checklist
 
 Before submitting a proposal:
