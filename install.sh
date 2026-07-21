@@ -30,42 +30,37 @@ else
     RED='' GREEN='' BLUE='' YELLOW='' CYAN='' BOLD='' DIM='' NC=''
 fi
 
-# Template metadata: description, best-for, and category for each template
-declare -A TEMPLATE_DESC
-TEMPLATE_DESC=(
-    ["python-project"]="Python applications and libraries. Covers ruff, mypy, pytest, Pydantic, dependency management."
-    ["go-project"]="Go services, APIs, and tools. Covers golangci-lint, table-driven tests, concurrency, error handling."
-    ["rust-project"]="Rust crates and binaries. Covers clippy, cargo-deny, thiserror/anyhow, tokio, unsafe policy."
-    ["fastapi-project"]="FastAPI web services. Covers Pydantic v2, SQLAlchemy, Alembic, dependency injection, async patterns."
-    ["ai-ml-project"]="AI/ML pipelines and model serving. Covers PyTorch, vLLM, GPU-aware testing, training, inference."
-    ["kubernetes-project"]="Kubernetes and OpenShift deployments. Covers Helm, CRDs, RBAC, operators, networking, observability."
-    ["operator-sdk"]="Kubernetes operators with Operator SDK. Covers controller-runtime, reconciliation, finalizers, OLM, webhooks."
-    ["helm-chart"]="Helm chart development. Covers template patterns, values schema, testing, hooks, OCI registries."
-    ["data-pipeline"]="Data engineering with Spark, Beam, or similar. Covers schema evolution, idempotency, backfill, data quality."
-    ["cli-tool"]="CLI tools in Go, Python, or Rust. Covers argument parsing, config files, shell completion, output formatting."
-    ["content-writing"]="Blog posts and technical articles. Covers Red Hat tone, SEO, editorial workflow, accessibility."
-    ["proposals"]="Conference proposals and CFP submissions. Covers abstract structure, talk design, demo planning."
-    ["documentation"]="Documentation sites (Antora, Hugo, MkDocs). Covers style guides, link checking, versioning, accessibility."
-    ["general-devrel"]="Developer Relations projects. Covers code samples, workshops, demos, community management, metrics."
-)
+# Template metadata: description and category for each template.
+# Implemented as functions instead of `declare -A` so the script works on
+# macOS's default bash 3.2, which has no associative arrays.
+template_desc() {
+    case "$1" in
+        python-project)     echo "Python applications and libraries. Covers ruff, mypy, pytest, Pydantic, dependency management." ;;
+        go-project)         echo "Go services, APIs, and tools. Covers golangci-lint, table-driven tests, concurrency, error handling." ;;
+        rust-project)       echo "Rust crates and binaries. Covers clippy, cargo-deny, thiserror/anyhow, tokio, unsafe policy." ;;
+        fastapi-project)    echo "FastAPI web services. Covers Pydantic v2, SQLAlchemy, Alembic, dependency injection, async patterns." ;;
+        ai-ml-project)      echo "AI/ML pipelines and model serving. Covers PyTorch, vLLM, GPU-aware testing, training, inference." ;;
+        kubernetes-project) echo "Kubernetes and OpenShift deployments. Covers Helm, CRDs, RBAC, operators, networking, observability." ;;
+        operator-sdk)       echo "Kubernetes operators with Operator SDK. Covers controller-runtime, reconciliation, finalizers, OLM, webhooks." ;;
+        helm-chart)         echo "Helm chart development. Covers template patterns, values schema, testing, hooks, OCI registries." ;;
+        data-pipeline)      echo "Data engineering with Spark, Beam, or similar. Covers schema evolution, idempotency, backfill, data quality." ;;
+        cli-tool)           echo "CLI tools in Go, Python, or Rust. Covers argument parsing, config files, shell completion, output formatting." ;;
+        content-writing)    echo "Blog posts and technical articles. Covers Red Hat tone, SEO, editorial workflow, accessibility." ;;
+        proposals)          echo "Conference proposals and CFP submissions. Covers abstract structure, talk design, demo planning." ;;
+        documentation)      echo "Documentation sites (Antora, Hugo, MkDocs). Covers style guides, link checking, versioning, accessibility." ;;
+        general-devrel)     echo "Developer Relations projects. Covers code samples, workshops, demos, community management, metrics." ;;
+        *)                  echo "No description" ;;
+    esac
+}
 
-declare -A TEMPLATE_CATEGORY
-TEMPLATE_CATEGORY=(
-    ["python-project"]="code"
-    ["go-project"]="code"
-    ["rust-project"]="code"
-    ["fastapi-project"]="code"
-    ["ai-ml-project"]="code"
-    ["kubernetes-project"]="infrastructure"
-    ["operator-sdk"]="infrastructure"
-    ["helm-chart"]="infrastructure"
-    ["data-pipeline"]="code"
-    ["cli-tool"]="code"
-    ["content-writing"]="content"
-    ["proposals"]="content"
-    ["documentation"]="content"
-    ["general-devrel"]="content"
-)
+template_category() {
+    case "$1" in
+        python-project|go-project|rust-project|fastapi-project|ai-ml-project|data-pipeline|cli-tool) echo "code" ;;
+        kubernetes-project|operator-sdk|helm-chart) echo "infrastructure" ;;
+        content-writing|proposals|documentation|general-devrel) echo "content" ;;
+        *) echo "unknown" ;;
+    esac
+}
 
 # Parse flags
 PREVIEW_MODE=false
@@ -215,9 +210,9 @@ show_template_list() {
         echo -e "  ${DIM}--- Code Projects ---${NC}"
         for i in "${!template_names[@]}"; do
             local name="${template_names[$i]}"
-            local cat="${TEMPLATE_CATEGORY[$name]:-unknown}"
+            local cat="$(template_category "$name")"
             if [ "${cat}" = "code" ]; then
-                local desc="${TEMPLATE_DESC[$name]:-No description}"
+                local desc="$(template_desc "$name")"
                 echo -e "  ${BLUE}$((i + 1)))${NC} ${BOLD}${name}${NC}"
                 echo -e "     ${DIM}${desc}${NC}"
                 echo ""
@@ -227,9 +222,9 @@ show_template_list() {
         echo -e "  ${DIM}--- Infrastructure Projects ---${NC}"
         for i in "${!template_names[@]}"; do
             local name="${template_names[$i]}"
-            local cat="${TEMPLATE_CATEGORY[$name]:-unknown}"
+            local cat="$(template_category "$name")"
             if [ "${cat}" = "infrastructure" ]; then
-                local desc="${TEMPLATE_DESC[$name]:-No description}"
+                local desc="$(template_desc "$name")"
                 echo -e "  ${BLUE}$((i + 1)))${NC} ${BOLD}${name}${NC}"
                 echo -e "     ${DIM}${desc}${NC}"
                 echo ""
@@ -239,9 +234,9 @@ show_template_list() {
         echo -e "  ${DIM}--- Content Projects ---${NC}"
         for i in "${!template_names[@]}"; do
             local name="${template_names[$i]}"
-            local cat="${TEMPLATE_CATEGORY[$name]:-unknown}"
+            local cat="$(template_category "$name")"
             if [ "${cat}" = "content" ]; then
-                local desc="${TEMPLATE_DESC[$name]:-No description}"
+                local desc="$(template_desc "$name")"
                 echo -e "  ${BLUE}$((i + 1)))${NC} ${BOLD}${name}${NC}"
                 echo -e "     ${DIM}${desc}${NC}"
                 echo ""
@@ -250,7 +245,7 @@ show_template_list() {
     else
         for i in "${!template_names[@]}"; do
             local name="${template_names[$i]}"
-            local desc="${TEMPLATE_DESC[$name]:-No description}"
+            local desc="$(template_desc "$name")"
             echo -e "  ${BLUE}$((i + 1)))${NC} ${BOLD}${name}${NC}"
             echo -e "     ${DIM}${desc}${NC}"
             echo ""
@@ -351,10 +346,11 @@ install_template() {
     target_dir="${target_dir/#\~/$HOME}"
 
     # Resolve to absolute path
-    target_dir="$(cd "${target_dir}" 2>/dev/null && pwd)" || {
+    resolved_dir="$(cd "${target_dir}" 2>/dev/null && pwd)" || {
         echo -e "${RED}Error: Directory '${target_dir}' does not exist.${NC}"
         exit 1
     }
+    target_dir="${resolved_dir}"
 
     local target_file="${target_dir}/CLAUDE.md"
 
@@ -396,7 +392,8 @@ install_template() {
 
     # Show TODO count
     local todo_count
-    todo_count=$(grep -c "TODO" "${target_file}" 2>/dev/null || echo "0")
+    todo_count=$(grep -c "TODO" "${target_file}" 2>/dev/null || true)
+    todo_count="${todo_count:-0}"
     if [ "${todo_count}" -gt 0 ]; then
         echo -e "  ${YELLOW}Found ${todo_count} TODO markers to customize.${NC}"
         echo ""
@@ -417,10 +414,11 @@ if [ "${CHECK_MODE}" = true ]; then
     check_dir="${check_dir/#\~/$HOME}"
 
     # Resolve to absolute path
-    check_dir="$(cd "${check_dir}" 2>/dev/null && pwd)" || {
+    resolved_dir="$(cd "${check_dir}" 2>/dev/null && pwd)" || {
         echo -e "${RED}Error: Directory '${check_dir}' does not exist.${NC}"
         exit 1
     }
+    check_dir="${resolved_dir}"
 
     check_file="${check_dir}/CLAUDE.md"
 
@@ -457,7 +455,8 @@ if [ "${CHECK_MODE}" = true ]; then
     fi
 
     # Report TODO count
-    todo_count=$(grep -c "TODO" "${check_file}" 2>/dev/null || echo "0")
+    todo_count=$(grep -c "TODO" "${check_file}" 2>/dev/null || true)
+    todo_count="${todo_count:-0}"
     if [ "${todo_count}" -gt 0 ]; then
         echo -e "  ${BOLD}TODO markers:${NC}  ${YELLOW}${todo_count} remaining${NC}"
     else
@@ -546,10 +545,11 @@ if [ "${COMBINE_MODE}" = true ]; then
     target_dir="${target_dir/#\~/$HOME}"
 
     # Resolve to absolute path
-    target_dir="$(cd "${target_dir}" 2>/dev/null && pwd)" || {
+    resolved_dir="$(cd "${target_dir}" 2>/dev/null && pwd)" || {
         echo -e "${RED}Error: Directory '${target_dir}' does not exist.${NC}"
         exit 1
     }
+    target_dir="${resolved_dir}"
 
     target_file="${target_dir}/CLAUDE.md"
 
@@ -602,7 +602,8 @@ if [ "${COMBINE_MODE}" = true ]; then
     echo ""
 
     # Show TODO count
-    todo_count=$(grep -c "TODO" "${target_file}" 2>/dev/null || echo "0")
+    todo_count=$(grep -c "TODO" "${target_file}" 2>/dev/null || true)
+    todo_count="${todo_count:-0}"
     if [ "${todo_count}" -gt 0 ]; then
         echo -e "  ${YELLOW}Found ${todo_count} TODO markers to customize.${NC}"
         echo ""
@@ -763,7 +764,7 @@ if [ "${INTERACTIVE_MODE}" = true ]; then
     if [ -n "${recommended}" ]; then
         echo ""
         echo -e "${GREEN}Recommended template: ${BOLD}${recommended}${NC}"
-        desc="${TEMPLATE_DESC[$recommended]:-}"
+        desc="$(template_desc "$recommended")"
         if [ -n "${desc}" ]; then
             echo -e "  ${DIM}${desc}${NC}"
         fi

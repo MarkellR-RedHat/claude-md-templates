@@ -194,7 +194,7 @@ Two slash commands ship with this repo for template management inside Claude Cod
 /compose-template fastapi + ai-ml
 ```
 
-To use these commands, add this repo as a command source in your Claude Code settings, or copy the `commands/` directory into your project's `.claude/commands/` directory.
+To use these commands, copy the files in `commands/` into `~/.claude/commands/` (available in every project) or into your project's `.claude/commands/` directory (available in that project only).
 
 ### Typical workflow
 
