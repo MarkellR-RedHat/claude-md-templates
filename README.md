@@ -1,6 +1,6 @@
 # claude-md-templates
 
-Part of my [dev toolkit](https://github.com/MarkellR-RedHat/dev-hub).
+Part of my dev toolkit.
 
 ## claude generates python that looks like go when it has no CLAUDE.md
 
@@ -214,8 +214,6 @@ A few of my other repos that go nicely with this one:
 |----------------------|-----|
 | Generate proposals for a conference CFP | [`/cfp`](https://github.com/MarkellR-RedHat/cfp-generator) drafts submission-ready abstracts |
 | Review content from a specific audience's perspective | [`/review-as-persona`](https://github.com/MarkellR-RedHat/review-as-persona) plays a skeptical reviewer or a target user |
-| Check writing style before publishing | [`/style-check`](https://github.com/MarkellR-RedHat/style-checker) catches jargon, passive voice, and filler |
-| Build a slide deck from your documented project | [`/slides`](https://github.com/MarkellR-RedHat/slide-outliner) generates a focused talk outline |
 | Set up new team members on Claude Code | [`/onboarding-kit`](https://github.com/MarkellR-RedHat/onboarding-kit) walks new hires through setup and conventions |
 
 ## Customizing a Template
