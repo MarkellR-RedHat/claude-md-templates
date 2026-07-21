@@ -45,7 +45,7 @@ template_desc() {
         helm-chart)         echo "Helm chart development. Covers template patterns, values schema, testing, hooks, OCI registries." ;;
         data-pipeline)      echo "Data engineering with Spark, Beam, or similar. Covers schema evolution, idempotency, backfill, data quality." ;;
         cli-tool)           echo "CLI tools in Go, Python, or Rust. Covers argument parsing, config files, shell completion, output formatting." ;;
-        content-writing)    echo "Blog posts and technical articles. Covers Red Hat tone, SEO, editorial workflow, accessibility." ;;
+        content-writing)    echo "Blog posts and technical articles. Covers editorial tone, SEO, editorial workflow, accessibility." ;;
         proposals)          echo "Conference proposals and CFP submissions. Covers abstract structure, talk design, demo planning." ;;
         documentation)      echo "Documentation sites (Antora, Hugo, MkDocs). Covers style guides, link checking, versioning, accessibility." ;;
         general-devrel)     echo "Developer Relations projects. Covers code samples, workshops, demos, community management, metrics." ;;

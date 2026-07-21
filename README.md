@@ -1,12 +1,12 @@
-# CLAUDE.md Templates
+# claude-md-templates
 
-Part of the [AI BU](https://github.com/MarkellR-RedHat/ai-bu-hub) tool suite.
+Part of my [dev toolkit](https://github.com/MarkellR-RedHat/dev-hub).
 
-## Claude generates Python that looks like Go when it has no CLAUDE.md.
+## claude generates python that looks like go when it has no CLAUDE.md
 
-Without project conventions, Claude guesses. It picks `requests` instead of `httpx`, skips type hints, uses `print()` instead of structured logging, and returns raw dicts instead of Pydantic models. The code compiles, but it would never pass review.
+Without project conventions, Claude guesses. It picks `requests` instead of `httpx`, skips type hints, uses `print()` instead of structured logging, and returns raw dicts instead of Pydantic models. The code compiles, but it'd never pass review.
 
-A CLAUDE.md file fixes this. Drop a template into your project root, and Claude writes code that matches your stack on the first try.
+A CLAUDE.md file fixes this. I kept writing the same one for every new project, so I turned them into templates. Drop one into your project root and Claude writes code that matches your stack on the first try.
 
 ## Before and After
 
@@ -91,8 +91,8 @@ The only difference is a CLAUDE.md file in the project root.
 ### 30-second install
 
 ```bash
-git clone https://github.com/MarkellR-RedHat/ai-bu-claude-md-templates.git
-cd ai-bu-claude-md-templates
+git clone https://github.com/MarkellR-RedHat/claude-md-templates.git
+cd claude-md-templates
 ./install.sh --template python-project --dir ~/my-project
 ```
 
@@ -204,17 +204,19 @@ To use these commands, copy the files in `commands/` into `~/.claude/commands/` 
 4. **Run `/compose-template`** if your project spans multiple domains (e.g., `python + kubernetes`).
 5. **Start prompting.** Open Claude Code in that directory and the conventions take effect immediately.
 
-**The detail that saves the most rework:** Fill in the `<!-- TODO -->` markers before your first real prompt. On a team of four, one engineer spent 45 minutes retrofitting type hints and structured logging after Claude generated 12 files without them. Filling in the template's stack section took 3 minutes and would have prevented every one of those fixes.
+**The detail that saves the most rework:** fill in the `<!-- TODO -->` markers before your first real prompt. I learned this the hard way, spending 45 minutes retrofitting type hints and structured logging after Claude generated 12 files without them. Filling in the template's stack section takes 3 minutes and would've prevented every one of those fixes.
 
-### Pairs with other AI BU tools
+### pairs well with
+
+A few of my other repos that go nicely with this one:
 
 | When you need to... | Use |
 |----------------------|-----|
-| Generate proposals for a conference CFP | [`/cfp`](https://github.com/MarkellR-RedHat/ai-bu-cfp-generator) drafts submission-ready abstracts |
-| Review content from a specific audience's perspective | [`/review-as-persona`](https://github.com/MarkellR-RedHat/ai-bu-review-as-persona) plays a skeptical reviewer or a target user |
-| Check writing style before publishing | [`/style-check`](https://github.com/MarkellR-RedHat/ai-bu-style-checker) catches jargon, passive voice, and filler |
-| Build a slide deck from your documented project | [`/slides`](https://github.com/MarkellR-RedHat/ai-bu-slide-outliner) generates a focused talk outline |
-| Set up new team members on Claude Code | [`/onboarding-kit`](https://github.com/MarkellR-RedHat/ai-bu-onboarding-kit) walks new hires through setup and conventions |
+| Generate proposals for a conference CFP | [`/cfp`](https://github.com/MarkellR-RedHat/cfp-generator) drafts submission-ready abstracts |
+| Review content from a specific audience's perspective | [`/review-as-persona`](https://github.com/MarkellR-RedHat/review-as-persona) plays a skeptical reviewer or a target user |
+| Check writing style before publishing | [`/style-check`](https://github.com/MarkellR-RedHat/style-checker) catches jargon, passive voice, and filler |
+| Build a slide deck from your documented project | [`/slides`](https://github.com/MarkellR-RedHat/slide-outliner) generates a focused talk outline |
+| Set up new team members on Claude Code | [`/onboarding-kit`](https://github.com/MarkellR-RedHat/onboarding-kit) walks new hires through setup and conventions |
 
 ## Customizing a Template
 
@@ -258,7 +260,7 @@ Examples:
 
 ## Contributing
 
-Open an issue or PR. If a template gave you bad output, tell us what Claude generated and what you expected. If you have a template for a project type not covered here, send it.
+Open an issue or PR. If a template gave you bad output, tell me what Claude generated and what you expected. If you have a template for a project type not covered here, send it.
 
 ### Template requirements
 

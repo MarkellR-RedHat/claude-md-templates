@@ -9,12 +9,12 @@
 
 ## Project Overview
 
-This is a Kubernetes-native project. It may include Helm charts, operators, custom controllers, CRDs, or deployment manifests targeting Kubernetes and Red Hat OpenShift clusters.
+This is a Kubernetes-native project. It may include Helm charts, operators, custom controllers, CRDs, or deployment manifests targeting Kubernetes and OpenShift clusters.
 
 ## Tech Stack
 
-- **Container Runtime**: Podman (preferred on Red Hat systems), Docker
-- **Orchestration**: Kubernetes, Red Hat OpenShift
+- **Container Runtime**: Podman, Docker
+- **Orchestration**: Kubernetes, OpenShift
 - **Package Management**: Helm, Kustomize
 - **Operator Framework**: Operator SDK, controller-runtime, kubebuilder
 - **CI/CD**: Tekton, GitHub Actions, OpenShift Pipelines
@@ -469,7 +469,7 @@ helm lint deploy/helm/           # Lint Helm charts
 
 ## Container Images
 
-- Base: Red Hat UBI (`registry.access.redhat.com/ubi9/ubi-minimal:latest`)
+- Base: a minimal, well-maintained image (`gcr.io/distroless/static`, `debian:stable-slim`, or `alpine`)
 - Build with Podman when possible.
 - Multi-stage builds to minimize size.
 - Run as non-root (`USER 1001`). Do not assume a specific UID for OpenShift compatibility.
@@ -598,8 +598,8 @@ Choose **Helm** when distributing to external users, needing templating logic, o
 Use ephemeral debug containers for live troubleshooting without modifying the pod spec:
 
 ```bash
-kubectl debug -it my-pod --image=registry.access.redhat.com/ubi9/toolbox --target=my-container
-kubectl debug node/my-node -it --image=registry.access.redhat.com/ubi9/toolbox
+kubectl debug -it my-pod --image=nicolaka/netshoot --target=my-container
+kubectl debug node/my-node -it --image=nicolaka/netshoot
 kubectl debug my-pod -it --copy-to=my-pod-debug --container=my-container -- /bin/sh
 ```
 

@@ -666,17 +666,17 @@ async def readiness(db: DbSession):
 
 ## Deployment
 
-### Container Image with UBI
+### Container Image
 
 ```dockerfile
-FROM registry.access.redhat.com/ubi9/python-311:latest AS builder
+FROM python:3.11-slim AS builder
 WORKDIR /app
 COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
-FROM registry.access.redhat.com/ubi9/python-311:latest
+FROM python:3.11-slim
 WORKDIR /app
-COPY --from=builder /opt/app-root /opt/app-root
+COPY --from=builder /usr/local /usr/local
 COPY src/ src/
 COPY alembic/ alembic/
 COPY alembic.ini .

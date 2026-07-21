@@ -2,7 +2,7 @@
 
 <!-- Quick customize: Fill in the TODOs below, then delete this section -->
 <!-- TODO: Set your blog platform (Hugo, Jekyll, WordPress, Ghost) -->
-<!-- TODO: Set your publication URL (e.g., https://developers.redhat.com/blog) -->
+<!-- TODO: Set your publication URL (e.g., https://blog.example.com) -->
 <!-- TODO: Set your team review process (PR-based, Google Docs, editorial board) -->
 <!-- TODO: Update frontmatter format to match your static site generator -->
 <!-- TODO: Set your target word counts per content type -->
@@ -11,7 +11,7 @@
 
 ## Project Overview
 
-This is a content and blog writing project. All content follows Red Hat editorial standards and is written for a technical audience of developers, architects, and IT decision-makers. Content should be direct, technically accurate, and useful on first read.
+This is a content and blog writing project. All content follows consistent editorial standards and is written for a technical audience of developers, architects, and IT decision-makers. Content should be direct, technically accurate, and useful on first read.
 
 ## Writing Voice and Tone
 
@@ -21,31 +21,25 @@ This is a content and blog writing project. All content follows Red Hat editoria
 - Do not use jargon without explaining it, unless the target audience is explicitly expert-level.
 - Keep sentences short. If a sentence has more than one comma, consider splitting it.
 - Use contractions naturally (it's, you'll, we're). They make writing feel human.
-- Address the reader as "you" and refer to Red Hat as "we" when writing on behalf of the company.
+- Address the reader as "you" and refer to your company or project as "we" when writing on its behalf.
 - Prefer concrete over abstract. Instead of "leverage cloud-native approaches," say "deploy on Kubernetes."
 - Let the technology do the talking. Features and capabilities are more convincing than adjectives.
 - When in doubt, cut the sentence. Shorter is almost always better.
 
-## Red Hat Product Name Conventions
+## Product Name Conventions
 
-Always use the correct, full product names on first reference. After the first mention, you may use the short form.
+Always use the correct, full product names on first reference. After the first mention, you may use the short form. Fill this table in with the products and projects you write about most:
 
 | Correct (first reference)            | Acceptable short form | Never write            |
 |--------------------------------------|-----------------------|------------------------|
-| Red Hat OpenShift                    | OpenShift             | Openshift, openshift   |
-| Red Hat Enterprise Linux             | RHEL                  | Redhat Linux           |
-| Red Hat Ansible Automation Platform  | Ansible               | Ansible Tower (legacy) |
-| Red Hat OpenShift AI                 | OpenShift AI          | RHOAI                  |
-| Red Hat Advanced Cluster Management  | ACM                   | RHACM                  |
-| Red Hat Developer Hub                | Developer Hub         | Backstage (alone)      |
-| Red Hat build of Keycloak            | Keycloak              | RH-SSO (legacy)        |
-| Red Hat Trusted Profile Analyzer     | TPA                   | Trusted Profile        |
+| Kubernetes                           | K8s (informal only)   | kubernetes, K8S        |
+| PostgreSQL                           | Postgres              | PostgresSQL, postgre   |
+| <!-- TODO: your product -->          |                       |                        |
 
-- "Red Hat" is always two words, always capitalized.
-- "OpenShift" is one word, capital O and capital S.
+- Match each vendor's official capitalization exactly ("OpenShift" is one word with a capital O and S; "PostgreSQL" is not "PostgresSQL").
 - Never abbreviate product names in titles or headings.
-- Upstream project names (Kubernetes, Podman, Tekton) do not need the "Red Hat" prefix.
-- When referencing a Red Hat product built from an upstream project, name both on first reference: "Red Hat OpenShift, the enterprise Kubernetes platform."
+- Upstream project names (Kubernetes, Podman, Tekton) stand on their own without a vendor prefix.
+- When referencing a commercial product built from an upstream project, name both on first reference: "Amazon EKS, the managed Kubernetes service."
 
 ## Content Lifecycle
 
@@ -100,7 +94,7 @@ date: 2025-03-15
 author: "Your Name"
 categories: ["AI/ML", "OpenShift"]
 tags: ["vllm", "inference", "kubernetes"]
-description: "A step-by-step guide to deploying large language models on Red Hat OpenShift using vLLM."
+description: "A step-by-step guide to deploying large language models on OpenShift using vLLM."
 draft: false
 ---
 ```
@@ -114,7 +108,7 @@ date: 2025-03-15
 author: yourname
 categories: ai-ml openshift
 tags: [vllm, inference, kubernetes]
-excerpt: "A step-by-step guide to deploying large language models on Red Hat OpenShift using vLLM."
+excerpt: "A step-by-step guide to deploying large language models on OpenShift using vLLM."
 ---
 ```
 
@@ -178,10 +172,10 @@ Example (JSON-LD for a blog post):
   },
   "datePublished": "2025-03-15",
   "dateModified": "2025-03-20",
-  "description": "A step-by-step guide to deploying large language models on Red Hat OpenShift using vLLM.",
+  "description": "A step-by-step guide to deploying large language models on OpenShift using vLLM.",
   "publisher": {
     "@type": "Organization",
-    "name": "Red Hat"
+    "name": "Your Publication"
   }
 }
 ```
@@ -202,7 +196,7 @@ Example (JSON-LD for a blog post):
 - Use descriptive link text. Never write "click here" or "this link."
 - Bad: `For more info, click [here](https://example.com).`
 - Good: `See the [OpenShift documentation on Routes](https://example.com) for details.`
-- Link to official Red Hat docs when referencing product features.
+- Link to the official product docs when referencing product features.
 - Link to upstream project docs (kubernetes.io, pytorch.org) for community technologies.
 - Check all links before publishing. Broken links erode trust.
 - When linking to versioned documentation, link to the specific version your content covers, not "latest."
@@ -231,7 +225,7 @@ Technical accuracy is non-negotiable. Follow this process for every piece of con
 ### Version Pinning
 
 - Pin all dependency versions in code samples and instructions.
-- Include the product version in the post's introduction: "This guide uses Red Hat OpenShift 4.15 and vLLM 0.4.2."
+- Include the product version in the post's introduction: "This guide uses Kubernetes 1.30 and vLLM 0.4.2."
 - When a new version ships, either update the post or add a note at the top indicating which version was tested.
 
 ### SME Review
@@ -241,22 +235,17 @@ Technical accuracy is non-negotiable. Follow this process for every piece of con
 - Give the SME at least 3 business days for review. Plan your timeline accordingly.
 - Document SME feedback and your responses in the PR or review thread for future reference.
 
-## Red Hat-Specific Publishing
+## Publication-Specific Notes
 
-### developers.redhat.com Submission
+<!-- TODO: Document the submission process for each publication you write for. -->
+
+### External Publication Submission
 
 1. Write your post in Markdown following the structure and frontmatter guidelines in this document.
-2. Submit via the editorial team's intake process (typically a form or email to the content lead).
+2. Submit via the publication's intake process (typically a form, an email to the content lead, or a PR against their repo).
 3. Include: the final Markdown file, all images, a short author bio, and your preferred publish date.
-4. Expect at least one round of editorial review. The editorial team will check for brand compliance, SEO, and style.
+4. Expect at least one round of editorial review. Editors typically check for style, SEO, and formatting.
 5. After publication, verify the live post and share it on social channels within 24 hours.
-
-### Red Hat Enable (enable.com) Content
-
-- Enable content targets Red Hat partners and solution architects.
-- Use a more technical tone than external blog posts. Assume familiarity with Red Hat products.
-- Include architecture diagrams, sizing guides, and deployment checklists.
-- Follow the Enable content templates provided by the partner enablement team.
 
 ### Product Launch Content Coordination
 
@@ -489,7 +478,7 @@ Before submitting content for review:
 
 ### Brand and Style
 - [ ] Product names are correct on first and subsequent references
-- [ ] "Red Hat" is two words and capitalized everywhere it appears
+- [ ] Company and product names are capitalized correctly everywhere they appear
 - [ ] Author bio and attribution are accurate
 - [ ] No AI tool is listed as author or contributor
 

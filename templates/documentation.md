@@ -184,7 +184,7 @@ jobs:
 ### Terminology
 - Use consistent terminology throughout the docs. Pick one term and stick with it.
 - Maintain a glossary or terminology reference if the project has domain-specific terms.
-- Follow Red Hat product name conventions (see the content-writing template for the full reference).
+- Follow official product name conventions (see the content-writing template for the full reference).
 
 ## Versioned Documentation
 
@@ -409,13 +409,13 @@ Use Vale for automated style enforcement. Install with `brew install vale` (macO
 # .vale.ini
 StylesPath = .vale/styles
 MinAlertLevel = suggestion
-Packages = RedHat, write-good
+Packages = Google, write-good
 
 [*.md]
-BasedOnStyles = Vale, RedHat, write-good
+BasedOnStyles = Vale, Google, write-good
 
 [*.adoc]
-BasedOnStyles = Vale, RedHat, write-good
+BasedOnStyles = Vale, Google, write-good
 ```
 
 Run `vale sync` to download style packages, then `vale docs/` to check all content.
@@ -507,7 +507,7 @@ If your project spans multiple domains, use these tools to extend this CLAUDE.md
   - `documentation + content-writing` for projects that produce both product docs and blog content (adds editorial standards, SEO, social media promotion)
   - `documentation + general-devrel` for DevRel teams where docs are part of a broader developer experience effort (adds developer journey mapping, code sample standards)
   - `documentation + python` or `documentation + go` for projects where the docs site and the application code live in the same repo
-- **`content-writing` template**: If your project includes blog posts or marketing content alongside documentation, that template provides editorial voice, SEO deep dive, content lifecycle, and Red Hat product naming conventions.
+- **`content-writing` template**: If your project includes blog posts or marketing content alongside documentation, that template provides editorial voice, SEO deep dive, content lifecycle, and product naming conventions.
 - **`general-devrel` template**: If your documentation is part of a DevRel effort that includes tutorials, workshops, and community programs, that template covers the full developer journey and content strategy framework.
 
 ## Review Checklist
@@ -520,7 +520,7 @@ Before merging documentation changes:
 - [ ] Headers use sentence case
 - [ ] No em dashes used anywhere in the content
 - [ ] Content reads well for non-native English speakers
-- [ ] Product names follow Red Hat conventions
+- [ ] Product names follow the official vendor conventions
 
 ### Technical accuracy
 - [ ] All code samples are tested and produce the expected output

@@ -9,7 +9,7 @@
 
 ## Project Overview
 
-This is a Helm chart project for packaging and deploying Kubernetes applications. The chart follows Helm best practices and is designed to work on both Kubernetes and Red Hat OpenShift clusters.
+This is a Helm chart project for packaging and deploying Kubernetes applications. The chart follows Helm best practices and is designed to work on both Kubernetes and OpenShift clusters.
 
 ## Chart Structure
 

@@ -511,7 +511,7 @@ Alert on: reconcile error rate > 0.1/s for 10m, p99 latency > 30s for 10m, workq
 
 - Never grant `cluster-admin`. Enumerate exact resources and verbs.
 - Use separate ServiceAccounts for the operator and any jobs it creates.
-- Use Red Hat UBI as base image. Run as non-root (`USER 65532:65532`).
+- Use a distroless base image (`gcr.io/distroless/static:nonroot`). Run as non-root (`USER 65532:65532`).
 - Set `readOnlyRootFilesystem: true`, drop all capabilities.
 - Pin image digests in production, not just tags.
 - Restrict network access with NetworkPolicies: allow ingress on 8443 (metrics) and 9443 (webhooks), egress on 443/6443 (API server).

@@ -2,7 +2,7 @@
 
 <!-- Quick customize: Fill in the TODOs below, then delete this section -->
 <!-- TODO: Set your team name (e.g., AI Platform DevRel) -->
-<!-- TODO: Set your GitHub org (e.g., github.com/redhat-developer) -->
+<!-- TODO: Set your GitHub org (e.g., github.com/your-org) -->
 <!-- TODO: List your primary technologies (e.g., OpenShift, vLLM, Kubernetes) -->
 <!-- TODO: Set your SLA for community responses (currently 2 business days) -->
 <!-- TODO: Update the CI workflow to match your GitHub org settings -->
@@ -119,7 +119,7 @@ Quarterly, do a fresh-install test on a clean machine or container. Follow your 
 ### Every code sample must include
 
 1. A `README.md` with what it does, who it is for, prerequisites, setup steps, and expected output.
-2. A license file (Apache 2.0 for Red Hat open source projects).
+2. A license file (Apache 2.0 and MIT are common choices).
 3. A `CONTRIBUTING.md` if accepting community contributions.
 
 ### Code quality
@@ -330,11 +330,11 @@ DevRel is the voice of the developer inside the company. This work is as importa
 - Design for the back row: 18pt minimum for terminal, 24pt minimum for slides, high contrast only.
 - Have a mobile hotspot as backup. Conference WiFi is unreliable.
 
-## Red Hat Brand Guidelines
+## Brand Guidelines
 
 - Use correct product names (see content-writing.md for the full reference).
-- Follow Red Hat brand guidelines for presentations and visual materials.
-- For upstream projects, focus on the community project name. Reference Red Hat products separately.
+- Follow your organization's brand guidelines for presentations and visual materials.
+- For upstream projects, focus on the community project name. Reference commercial products separately.
 - Include disclaimers for pre-release or tech preview features.
 - Get brand team approval for partner co-branded content.
 - Never represent AI-generated content as human-authored.
@@ -487,7 +487,7 @@ If your work spans multiple domains, use these tools to extend this CLAUDE.md:
 
 - **`/suggest-template`**: Run this command in your project directory to auto-detect the project type. For DevRel repos, it detects code sample directories, workshop materials, demo scripts, and community tooling.
 - **`/compose-template general-devrel + [other]`**: Merge this template with another. Common combinations:
-  - `general-devrel + content-writing` for DevRel teams focused on blog posts and editorial content (adds SEO, editorial calendar, content lifecycle, Red Hat product naming)
+  - `general-devrel + content-writing` for DevRel teams focused on blog posts and editorial content (adds SEO, editorial calendar, content lifecycle, product naming)
   - `general-devrel + documentation` for DevRel teams maintaining product docs alongside tutorials and samples (adds Diataxis framework, Vale linting, versioned docs)
   - `general-devrel + proposals` for DevRel teams managing conference proposals as part of their developer advocacy work (adds CFP structure, talk design, abstract patterns)
   - `general-devrel + python` or `general-devrel + go` for DevRel repos with production-quality code samples in a specific language (adds language-specific linting, testing, and conventions)
@@ -511,7 +511,7 @@ Before publishing any DevRel content, verify the following:
 ### Content quality
 - [ ] Content has been reviewed by at least one other person
 - [ ] Links are valid and point to current resources
-- [ ] Product names follow Red Hat conventions
+- [ ] Product names follow the official vendor conventions
 - [ ] No em dashes in the content
 - [ ] Headers use sentence case
 - [ ] Code blocks specify the language for syntax highlighting

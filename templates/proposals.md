@@ -15,7 +15,6 @@ This repo contains conference talk proposals, abstracts, and supporting material
 ### Cloud Native and Infrastructure
 
 - **KubeCon + CloudNativeCon** (CNCF): Cloud native, Kubernetes, containers, service mesh, observability
-- **Red Hat Summit**: Red Hat products, hybrid cloud, automation, AI/ML on OpenShift
 - **Open Source Summit** (Linux Foundation): Linux, open source strategy, supply chain security
 - **DevConf.cz / DevConf.us**: Open source, community-driven, broad technical topics
 - **FOSDEM**: Open source, community, upstream projects
@@ -66,7 +65,7 @@ cfps:
     video_required: false
     notes: "250-word abstract limit"
 
-  - conference: Red Hat Summit
+  - conference: KubeCon + CloudNativeCon NA
     year: 2026
     cfp_opens: "2026-01-15"
     cfp_closes: "2026-03-01"
@@ -75,10 +74,10 @@ cfps:
     location: "Boston, MA"
     tracks:
       - "AI/ML"
-      - "Hybrid Cloud"
-    submission_url: "https://www.redhat.com/summit"
+      - "Operations"
+    submission_url: "https://events.linuxfoundation.org/kubecon-cloudnativecon-north-america/"
     video_required: false
-    notes: "Internal reviewers required before submission"
+    notes: "Sessionize submission; co-speaker details required up front"
 ```
 
 ### Common session lengths
@@ -367,13 +366,13 @@ Tips for pitch emails:
 - Offer flexibility on format and length. It shows you are collaborative.
 - Follow up once after 7 to 10 days if you do not hear back. After that, move on.
 
-## Red Hat Product References
+## Product References
 
-When referencing Red Hat products in proposals:
+When referencing commercial products in proposals:
 - Use full product names on first reference (see content-writing.md for the full list).
-- Position talks around the open source project when submitting to community conferences. Reference the upstream project (e.g., "Kubernetes" not "OpenShift") as the primary technology.
-- For Red Hat-sponsored events, it is appropriate to reference product names directly.
-- If your talk includes a demo on a Red Hat product, mention both the upstream project and the product: "We will demo on Red Hat OpenShift, with steps that also work on vanilla Kubernetes."
+- Position talks around the open source project when submitting to community conferences. Reference the upstream project (e.g., "Kubernetes" not a vendor distribution) as the primary technology.
+- For vendor-sponsored events, it is appropriate to reference product names directly.
+- If your talk includes a demo on a commercial product, mention both the upstream project and the product: "We will demo on a managed Kubernetes service, with steps that also work on vanilla Kubernetes."
 
 ## File Organization
 
@@ -428,7 +427,7 @@ If your work spans multiple domains, use these tools to extend this CLAUDE.md:
 - **`/compose-template proposals + [other]`**: Merge this template with another. Common combinations:
   - `proposals + content-writing` for teams that manage conference proposals and blog posts in the same repo (adds editorial standards, SEO, content lifecycle)
   - `proposals + general-devrel` for DevRel teams where proposal writing is part of a broader content and community strategy
-- **`content-writing` template**: If you repurpose conference talks into blog posts (or vice versa), that template provides editorial standards, blog structure, SEO, and Red Hat product naming conventions.
+- **`content-writing` template**: If you repurpose conference talks into blog posts (or vice versa), that template provides editorial standards, blog structure, SEO, and product naming conventions.
 - **`general-devrel` template**: If your proposals are part of a broader DevRel effort that includes code samples, workshops, and community building, that template covers event planning checklists, demo guidelines, and developer journey mapping.
 
 ## Review Checklist

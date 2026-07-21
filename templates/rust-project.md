@@ -689,16 +689,13 @@ Prefer well-maintained crates. Check download counts and recent activity. Use `c
 ## Container Image
 
 ```dockerfile
-FROM registry.access.redhat.com/ubi9/ubi:latest AS builder
-RUN dnf install -y gcc make && \
-    curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y
-ENV PATH="/root/.cargo/bin:${PATH}"
+FROM rust:1-slim AS builder
 WORKDIR /app
 COPY Cargo.toml Cargo.lock ./
 COPY src/ src/
 RUN cargo build --release
 
-FROM registry.access.redhat.com/ubi9/ubi-minimal:latest
+FROM debian:stable-slim
 COPY --from=builder /app/target/release/my-crate /usr/local/bin/my-crate
 USER 1001
 ENTRYPOINT ["/usr/local/bin/my-crate"]

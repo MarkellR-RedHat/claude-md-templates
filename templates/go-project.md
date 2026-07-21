@@ -558,9 +558,9 @@ COPY . .
 RUN CGO_ENABLED=0 GOOS=${TARGETOS} GOARCH=${TARGETARCH} \
     go build -ldflags="-s -w" -o /app/bin/myapp ./cmd/myapp
 
-FROM registry.access.redhat.com/ubi9/ubi-minimal:latest
+FROM gcr.io/distroless/static-debian12:nonroot
 COPY --from=builder /app/bin/myapp /usr/local/bin/myapp
-USER 1001
+USER 65532
 ENTRYPOINT ["/usr/local/bin/myapp"]
 ```
 

@@ -580,9 +580,9 @@ logger.debug("processing complete", output_keys=list(result.keys()))
 
 ## Container Image
 
-Use Red Hat Universal Base Image:
+Use a slim, well-maintained base image:
 ```dockerfile
-FROM registry.access.redhat.com/ubi9/python-311:latest
+FROM python:3.11-slim
 WORKDIR /app
 COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt

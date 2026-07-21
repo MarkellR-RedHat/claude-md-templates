@@ -167,8 +167,8 @@ If a security topic appears in two templates (e.g., both Python and Kubernetes m
 
 When two templates both mention container images, apply these rules:
 
-- **Base image**: Always use Red Hat UBI. The final stage must use `registry.access.redhat.com/ubi9/ubi-minimal:latest` (or the language-specific UBI variant like `ubi9/python-311` for Python apps). If the cli-tool template suggests distroless or scratch, override it to UBI in the composed output.
-- **Builder stage**: Use the language-appropriate builder. For Go: `golang:1.2x`. For Rust: `ubi9/ubi:latest` with rustup. For Python: the UBI Python image directly.
+- **Base image**: Pick one base image family and use it consistently across the composed output. The final stage should be minimal: `gcr.io/distroless/static` for Go, `debian:stable-slim` for Rust, `python:3.11-slim` for Python apps.
+- **Builder stage**: Use the language-appropriate builder. For Go: `golang:1.2x`. For Rust: `rust:1-slim`. For Python: the slim Python image directly.
 - **Multi-arch builds**: If the Go template is included, keep its multi-arch build pattern (`--platform linux/amd64,linux/arm64`) and apply it to the composed Dockerfile.
 - **Common rules across all templates**: Non-root USER 1001, multi-stage builds, minimal final image.
 - When one template has a more detailed Dockerfile pattern than another, use the more detailed one as the base and add any unique steps from the other template (e.g., adding `COPY --from=builder` steps for model artifacts from the AI/ML template into a Go operator's Dockerfile).
@@ -305,7 +305,7 @@ Sections that are unique to one template (e.g., "Operator Development" from the 
 When templates give contradictory guidance, apply these explicit resolution rules:
 
 ### Container Base Image
-Always use Red Hat Universal Base Image (UBI). If any template suggests distroless, scratch, or a non-UBI base, replace it with the appropriate UBI variant. The final stage is always `ubi9/ubi-minimal`. The builder stage uses the language-specific image (e.g., `golang:1.2x` for Go, `ubi9/python-311` for Python).
+Use one consistent base image family in the composed output. If templates disagree, prefer the more minimal option (distroless or slim over full OS images). The builder stage uses the language-specific image (e.g., `golang:1.2x` for Go, `python:3.11-slim` for Python).
 
 ### Testing Frameworks
 Keep all testing frameworks. Never discard one in favor of another. Organize by test type (unit, integration, e2e, load, evaluation) with clear sub-headers indicating which framework applies where. When two templates both use pytest, consolidate their pytest configuration into one `pyproject.toml` snippet covering all test paths and markers.

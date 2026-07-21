@@ -24,7 +24,7 @@ This is an AI/ML project. It may involve model training, fine-tuning, inference 
 - **Model Registry**: MLflow Model Registry, HuggingFace Hub
 - **Orchestration**: Kubeflow Pipelines, Airflow, Tekton
 - **Container Runtime**: Podman, Docker
-- **Platform**: Red Hat OpenShift, Red Hat OpenShift AI
+- **Platform**: Kubernetes, OpenShift
 - **Monitoring**: Prometheus, Grafana, OpenTelemetry
 
 ## Code Conventions
@@ -469,7 +469,7 @@ python -m vllm.entrypoints.openai.api_server \
 For Kubernetes deployments, set these as container args in your Deployment manifest and expose port 8000 via a Service.
 
 ### Container Images
-- Use Red Hat Universal Base Image (UBI) as the base image when deploying on OpenShift.
+- Use a slim, well-maintained base image (the official CUDA runtime images for GPU workloads).
 - Pin CUDA and cuDNN versions in the Dockerfile.
 - Use multi-stage builds to keep the final image size reasonable.
 - Include a non-root user in the container for security.
@@ -836,7 +836,7 @@ If your project spans multiple domains, use these tools to extend this CLAUDE.md
   - `ai-ml + kubernetes` for ML workloads on Kubernetes or OpenShift AI (adds pod security, GPU scheduling, node affinity, RBAC)
   - `ai-ml + data-pipeline` for end-to-end ML systems with data ingestion, feature engineering, and model training
 - **`fastapi-project` template**: If your inference service uses FastAPI, that template provides deeper coverage of API routing, middleware, authentication, and Alembic migrations.
-- **`kubernetes-project` template**: If your ML workloads run on Kubernetes or Red Hat OpenShift AI, that template adds deployment manifests, resource limits for GPU requests, and monitoring with Prometheus and Grafana.
+- **`kubernetes-project` template**: If your ML workloads run on Kubernetes, that template adds deployment manifests, resource limits for GPU requests, and monitoring with Prometheus and Grafana.
 - **`data-pipeline` template**: If your project includes data preprocessing, feature pipelines, or ETL work feeding into model training, that template covers Spark, Beam, schema evolution, and data quality frameworks.
 - **`python-project` template**: This AI/ML template assumes Python foundations. The `python-project` template has deeper coverage of ruff, mypy strict mode, and general Python testing patterns that apply to all Python-based ML work.
 
